@@ -6,29 +6,28 @@ from .fermi import fermi
 
 # Self energies
 def calc_sigmaER(syst, lead, eng):
-    """Calculates Σ_m(E)^R in lead m."""
+    """Calculates Σ_m(E)^R in lead m using Kwant."""
     if np.isscalar(eng):
         return syst.leads[lead].selfenergy(eng)
     else:
         return np.array([syst.leads[lead].selfenergy(e)[0,0] for e in eng]) 
 
-def calc_sigmaEL(syst, lead, eng, ef, beta):
-    """Calculates Σ_m(E)^< in lead m.
+def calc_sigmaEL(SigmaER, eng, ef, beta):
+    """Calculates Σ_m(E)^< in lead m from Σ_m(E)^R 
 
     Equation is
-        Σ(E)^< = i·Γ_m(E)·f(e-e_f),    Γ_m(E) = i·[Σ_m(E)^R - Σ_m(E)^A]
-        Σ(E)^< =-[Σ_m(E)^R - Σ_m(E)^A]·f(e-e_f)
+        Σ_m(E)^< = i·Γ_m(E)·f(e-e_f),    Γ_m(E) = i·[Σ_m(E)^R - Σ_m(E)^A]
+        Σ_m(E)^< =-[Σ_m(E)^R - Σ_m(E)^A]·f(e-e_f)
     where f(e-ef) is Fermi function."""
 
-    sigmaER = calc_sigmaER(syst, lead, eng)
-    return -(sigmaER - sigmaER.conj())*fermi(eng, ef, beta)
+    return -(SigmaER - SigmaER.conj())*fermi(eng, ef, beta)
 
 # Green functions
 ## Energy domain
 
 
 def calc_GER(syst, engs):
-    """Calculates G(E)^R from matrix inversion.
+    """Calculates G(E)^R from matrix inversion using Kwant.
 
     Equation:
         G(E)^R = 1/(E·I - H - ∑_m Σ_m(E)^R)
@@ -66,6 +65,7 @@ def calc_GEL(GER, SELs):
         sel_mat[:,i,i] = SEL[:]
     GEL = np.array([np.dot(GER[i], np.dot(sel_mat[i], GER[i].conj().T)) for i in range(GER.shape[0])])
     return GEL    
+
 
 ## Time domain
 

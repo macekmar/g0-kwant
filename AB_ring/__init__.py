@@ -5,6 +5,7 @@ from AB_ring.physics.fermi import *
 from AB_ring.physics.calc_g0 import *
 from AB_ring.physics.calc_transmission import *
 from AB_ring.physics.g0 import *
+from AB_ring.physics.selfenergy import *
 
 from AB_ring.misc.save_h5 import *
 

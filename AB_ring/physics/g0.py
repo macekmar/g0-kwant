@@ -1,107 +1,146 @@
 import numpy as np
 import scipy as sc
-# Analytical results from paper 1307.6419, Eq. C.3-C.12
+from .fermi import fermi
+from .selfenergy import *
 
-## Self energy
-def SER(e, Gamma=2):
-    return (Gamma/2)*np.piecewise(
-            np.array(e, dtype=np.complex), [e < -2.0, (e >= -2.0) & (e <= 2.0)],
-           [lambda e: (e/2.0 + np.sqrt((e/2.0)**2 - 1)),
-            lambda e: (e/2.0 - 1j*np.sqrt(1 - (e/2.0)**2)),
-            lambda e: (e/2.0 - np.sqrt((e/2.0)**2 - 1))
-           ])
-def SEL(e, ef, Gamma=2):
-    return (Gamma/2)*np.piecewise(
-            np.array(e, dtype=np.complex), [(e >= -2.0) & (e <= ef)],
-           [lambda e: (2j*(np.sqrt(1 - (e/2.0)**2))),
-            lambda e: 0
-           ])
+# Analytical results from paper 1307.6419, Eq. C.7-C.12 and my calculations
 
-def SER_general(e, gamma_att=1.0, gamma_lead=1.0):
-    """Calculates Σ(E)^R for a perfect semi-infinite lead.
-
-    Equation is:
-                    2               ______________
-                |γ'|  ⎛  E         ╱ ⎛  E  ⎞2
-                ───── ⎜───── ±    ╱  ⎜─────⎟  ‒ 1
-                |γ"|  ⎝2|γ"|    ╲╱   ⎝2|γ"|⎠
-    for E...
-
-
-    where γ" is hopping in the leads and γ' is the hopping at the attachemnt.
-    
-    In Kwant we have to take at least 3 sites:
-
-                          γ'  γ'  γ   γ   γ' γ'  
-                        ┄┄┄─○───●───◎───●───○─┄┄┄
-
-    where ● are part of the scattering region and ◎ is the quantum dot.
-    So, Σ(E)^R is for attachment to ○───● and γ' = γ".
-    """            
-
-    e = e/(2.0*np.abs(gamma_lead))
-    return np.abs(gamma_att)**2/np.abs(gamma_lead)*np.piecewise(
-            np.array(e, dtype=np.complex), [e < -1.0, (e >= -1.0) & (e <= 1.0)],
-           [lambda e: (e + np.sqrt(e**2 - 1)),
-            lambda e: (e - 1j*np.sqrt(1 - e**2)),
-            lambda e: (e - np.sqrt(e**2 - 1))
-           ])
-def SEL_general(e, ef, gamma_att=1.0, gamma_lead=1.0):
-    e = e/(2.0*np.abs(gamma_lead))
-    ef = ef/(2.0*np.abs(gamma_lead))
-    return np.abs(gamma_att)**2/np.abs(gamma_lead)*np.piecewise(
-            np.array(e, dtype=np.complex), [(e >= -1.0) & (e <= ef)],
-           [lambda e: (2j*(np.sqrt(1 - e**2))),
-            lambda e: 0
-           ])
-
-
-
-## x,x Green functions
-### energy domain
-def GER00_general(engs, ed, gamma_dot, gamma_wire):
-    return 1.0/(engs - ed - 2*SER_general(engs, gamma_dot, gamma_wire))
+## energy domain
 
 def GER00(e):
-    return np.piecewise(np.array(e, dtype=np.complex), [e < -2.0, (e >= -2.0) & (e <= 2.0)],
-           [lambda e: -1/2.0 / np.sqrt((e/2.0)**2-1),
-            lambda e: 1/2.0 /( 1j*np.sqrt(1-(e/2.0)**2) ),
-            lambda e: 1/2.0 / np.sqrt((e/2.0)**2-1)
-           ])
+    """Returns G_{00}(E)^R for a perfect wire with γ = 1.
 
-def GEL00_general(engs, ef, ed, gamma_dot, gamma_wire):
-    ger = GER00_general(engs, ed, gamma_dot, gamma_wire)
-    sel = 2*SEL_general(engs, ef, gamma_dot, gamma_wire)
-    return ger*sel*ger.conj()
-
+    Equation C.7 in 1307.6419"""
+    e = e/2.0
+    return np.piecewise(np.array(e, dtype=np.complex), [e < -1.0, (e >= -1.0) & (e <= 1.0)],
+            [   lambda e: -1/2.0 / np.sqrt(e**2-1),
+                lambda e: 1/2.0 /( 1j*np.sqrt(1-e**2) ),
+                lambda e: 1/2.0 / np.sqrt(e**2-1) ])
 
 def GEL00(e, ef):
-    return np.piecewise(np.array(e, dtype=np.complex), [(e >= -2.0) & (e <= ef)],
-           [lambda e: (1j / (np.sqrt(1-(e/2.0)**2))),
-            lambda e: 0
-           ])
+    """Returns G_{00}(E)^< for a perfect wire with γ = 1.
 
-### time domain
-def GtR00(ts):
-    return -1j*sc.special.jv(0,2*ts)*np.heaviside(ts,1)
-def GtL00(ts):
-    return 0.5j*sc.special.jv(0,2*ts) - 0.5*sc.special.struve(0,2*ts)
-
-## x,x+1 Green functions
-def GER01(e):
+    Equation C.8 in 1307.6419"""
     e = e/2.0
-    a = np.piecewise(
+    ef = ef/2.0
+    return np.piecewise(np.array(e, dtype=np.complex), [(e >= -1.0) & (e <= ef)],
+            [   lambda e: (1j / (np.sqrt(1-e**2))),
+                lambda e: 0 ])
+
+def GER01(e):
+    """Returns G_{01}(E)^R for a perfect lead with γ = 1.
+
+    Calculated from an inverse of E - H - Σ(E)^R where H is a 2x2 matrix
+
+                              γ   γ    γ   γ   γ
+                        ┄┄┄─○───○───◎───●───○─┄┄┄
+    Only ◎───● was part of the scattering region. """
+    e = e/2.0
+    # k = np.piecewise(
+    #         np.array(e, dtype=np.complex), [e < -1.0, (e >= -1.0) & (e <= 1.0)],
+    #         [   lambda e: (e - np.sqrt(e**2 - 1)),
+    #             lambda e: (e + 1j*np.sqrt(1 - e**2)),
+    #             lambda e: (e + np.sqrt(e**2 - 1))   ]) 
+    # return  1/(k**2-1)
+    k = np.piecewise(
             np.array(e, dtype=np.complex), [e < -1.0, (e >= -1.0) & (e <= 1.0)],
-           [lambda e: (e - np.sqrt(e**2 - 1)),
-            lambda e: (e + 1j*np.sqrt(1 - e**2)),
-            lambda e: (e + np.sqrt(e**2 - 1))
-           ]) 
-    return  1/(a**2-1)
+            [   lambda e: (-np.sqrt(e**2 - 1)),
+                lambda e: (+1j*np.sqrt(1 - e**2)),
+                lambda e: (+np.sqrt(e**2 - 1))   ]) 
+    return 1.0/2.0*(e - k)/k
 
 def GEL01(e, ef):
-    return np.piecewise(np.array(e, dtype=np.complex), [(e >= -2.0) & (e <= ef)],
-           [lambda e: (1j*e/2/ (np.sqrt(1-(e/2.0)**2))),
-            lambda e: 0
-           ])
+    """Returns G_{00}(E)^< for a perfect wire with γ = 1.
+
+    Equation C.11 in 1307.6419"""
+    e = e/2.0
+    ef = ef/2.0
+    return np.piecewise(np.array(e, dtype=np.complex), [(e >= -1.0) & (e <= ef)],
+            [   lambda e: (1j*e/ (np.sqrt(1-e**2))),
+                lambda e: 0 ])
+
+def GER00_general(e, ed, gamma_dot, gamma_wire):
+    """Returns G_{00}(E)^R for a quantum dot connected to wires.
+
+    Calculated from an inverse of E - H - Σ(E)^R where H is a 1x1 matrix
+
+                          γ'  γ'  γ   γ   γ'  γ'
+                        ┄┄┄─○───○───◎───○───○─┄┄┄
+                                    εd
+    Only ◎ was part of the scattering region. 
+    Arguments:
+        ed         : εd
+        gamma_dot  : γ
+        gamma_wire : γ' """
+    # # Result for ◎───● system:
+    # k1 = (e - SER_general(e, gamma_wire, gamma_wire))
+    # k2 = (e - ed - SER_general(e, gamma_dot, gamma_wire))
+    # return k1/(k1*k2 - gamma_dot**2)
+    e = e/(2*np.abs(gamma_wire))
+    ed = ed/(2*np.abs(gamma_wire))
+    k = np.abs(gamma_dot)**2/np.abs(gamma_wire)**2
+    c = np.piecewise(
+            np.array(e, dtype=np.complex), [e < -1.0, (e >= -1.0) & (e <= 1.0)],
+            [   lambda e: (+np.sqrt(e**2 - 1)),
+                lambda e: (-1j*np.sqrt(1 - e**2)),
+                lambda e: (-np.sqrt(e**2 - 1))   ])
+    return 1.0/(2.0*np.abs(gamma_wire))/((1-k)*e - ed -k*c)
+
+def GEL00_general(e, ef1, ef2, beta, ed, gamma_dot, gamma_wire):
+    """Returns G_{00}(E)^< for a quantum dot connected to wires.
+
+    Calculated from equation
+        G_{00}(E)^< = G_{00}(E)^R · Σ(E)^< · [G_{00}(E)^R]^†
+    
+    where Σ(E)^< = ∑_m Σ_m(E)^<. """
+
+    # ger = GER00_general(engs, ed, gamma_dot, gamma_wire)
+    # sel = 2*SEL_general(engs, ef, gamma_dot, gamma_wire)
+    # return ger*sel*ger.conj()
+    f1 = fermi(e, ef1, beta)
+    f2 = fermi(e, ef2, beta)
+    e = e/(2*np.abs(gamma_wire))
+    ed = ed/(2*np.abs(gamma_wire))
+    k = np.abs(gamma_dot)**2/np.abs(gamma_wire)**2
+    sel = np.piecewise(np.array(e, dtype=np.complex), [(e >= -1.0) & (e <= 1)],
+            [   lambda e: (np.abs(gamma_dot)**2/np.abs(gamma_wire))*1j*2*np.sqrt(1-e**2),
+                lambda e: 0 ])
+    ger_gea = 1.0/(4*np.abs(gamma_wire)**2) * 1.0/(2*(1-k)*(e**2-e*ed) + k**2 + ed**2 - e**2)
+    return (f1+f2)/2.0*ger_gea*2*sel
+
+def GER01_general(e, ed, gamma_dot, gamma_wire):
+    """Returns G_{01}(E)^R for a quantum dot connected to wires.
+
+    Calculated from an inverse of E - H - Σ(E)^R where H is a 2x2 matrix
+
+                          γ'  γ'  γ   γ   γ'  γ'
+                        ┄┄┄─○───○───◎───●───○─┄┄┄
+                                    εd
+    Only ◎───● was part of the scattering region. 
+    Arguments:
+        ed         : εd
+        gamma_dot  : γ
+        gamma_wire : γ' """
+    k1 = (e - SER_general(e, gamma_wire, gamma_wire))
+    k2 = (e - ed - SER_general(e, gamma_dot, gamma_wire))
+    return gamma_dot/(k1*k2 - gamma_dot**2)
+
+
+## time domain
+def GtR00(ts):
+    """Returns G_{00}(t)^R for a perfect wire with γ = 1.
+
+    Equation C.9 in 1307.6419"""
+    return -1j*sc.special.jv(0,2*ts)*np.heaviside(ts,1)
+
+def GtL00(ts):
+    """Returns G_{00}(t)^< for a perfect wire with γ = 1.
+
+    Equation C.10 in 1307.6419"""
+    return 0.5j*sc.special.jv(0,2*ts) - 0.5*sc.special.struve(0,2*ts)
+
 def GtL01(ts):
+    """Returns G_{01}(t)^< for a perfect wire with γ = 1.
+
+    Equation C.12 in 1307.6419"""
     return 0.5*sc.special.jv(1,2*ts) - 0.5j*sc.special.struve(-1,2*ts)
