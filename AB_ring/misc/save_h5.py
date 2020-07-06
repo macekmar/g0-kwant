@@ -62,7 +62,7 @@ def save_to_hdf(filename, param, t, gL, gG):
 
         ## Add g<> data
         for spin in ["up", "down"]:
-            asser gL.shape == gG.shape
+            assert gL.shape == gG.shape
             shape = list(gL.shape) + [2]
             
             dset = g0_lesser[spin].create_dataset("data", shape, compression="gzip", compression_opts=9)
