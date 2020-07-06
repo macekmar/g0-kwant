@@ -62,10 +62,17 @@ def save_to_hdf(filename, param, t, gL, gG):
 
         ## Add g<> data
         for spin in ["up", "down"]:
-            g0_lesser[spin]["data"] = np.concatenate((gL[..., np.newaxis].real,
-                                                      gL[..., np.newaxis].imag), axis=-1 ).real
-            g0_greater[spin]["data"] = np.concatenate((gG[..., np.newaxis].real,
-                                                       gG[..., np.newaxis].imag), axis=-1 ).real
+            asser gL.shape == gG.shape
+            shape = list(gL.shape) + [2]
+            
+            dset = g0_lesser[spin].create_dataset("data", shape, compression="gzip", compression_opts=9)
+            data = np.concatenate((gL[..., np.newaxis].real, gL[..., np.newaxis].imag), axis=-1 ).real
+            dset[:] = data[:]
+            
+            dset = g0_greater[spin].create_dataset("data", shape, compression="gzip", compression_opts=9)
+            data = np.concatenate((gG[..., np.newaxis].real, gG[..., np.newaxis].imag), axis=-1 ).real
+            dset[:] = data[:]
+
 
         # Add attributes
         write_attr_string(g0, "TRIQS_HDF5_data_scheme", "KELDY_G0Model")
