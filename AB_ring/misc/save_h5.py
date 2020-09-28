@@ -32,8 +32,8 @@ def save_to_hdf(filename, param, t, gL, gG):
 
         for err in ["greater_ft_error", "lesser_ft_error"]:
             g_err = g0.create_group(err)
-            g_err["data"] = np.empty(shape=(0, 0, 0, 2), dtype=np.float64)
-            add_mesh(g_err, np.array([0.0,1.0], dtype=np.float))
+            g_err["data"] = np.empty(shape=(0, 0, 0, 2), dtype=np.double)
+            add_mesh(g_err, np.array([0.0,1.0], dtype=np.double))
 
         g0_param = g0.create_group("model_omega").create_group("param_")
         for (key, val) in param.items():
@@ -65,11 +65,11 @@ def save_to_hdf(filename, param, t, gL, gG):
             assert gL.shape == gG.shape
             shape = list(gL.shape) + [2]
             
-            dset = g0_lesser[spin].create_dataset("data", shape, compression="gzip", compression_opts=9)
+            dset = g0_lesser[spin].create_dataset("data", shape, compression="gzip", compression_opts=9, dtype="d")
             data = np.concatenate((gL[..., np.newaxis].real, gL[..., np.newaxis].imag), axis=-1 ).real
             dset[:] = data[:]
             
-            dset = g0_greater[spin].create_dataset("data", shape, compression="gzip", compression_opts=9)
+            dset = g0_greater[spin].create_dataset("data", shape, compression="gzip", compression_opts=9, dtype="d")
             data = np.concatenate((gG[..., np.newaxis].real, gG[..., np.newaxis].imag), axis=-1 ).real
             dset[:] = data[:]
 
