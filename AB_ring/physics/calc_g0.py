@@ -3,24 +3,25 @@ import numpy as np
 import scipy as sc
 
 from .fermi import fermi
+from .calc_sigma import *
 
-# Self energies
-def calc_sigmaER(syst, lead, eng):
-    """Calculates Σ_m(E)^R in lead m using Kwant."""
-    if np.isscalar(eng):
-        return syst.leads[lead].selfenergy(eng)
-    else:
-        return np.array([syst.leads[lead].selfenergy(e)[0,0] for e in eng]) 
+# # Self energies
+# def calc_sigmaER(syst, lead, eng):
+#     """Calculates Σ_m(E)^R in lead m using Kwant."""
+#     if np.isscalar(eng):
+#         return syst.leads[lead].selfenergy(eng)
+#     else:
+#         return np.array([syst.leads[lead].selfenergy(e)[0,0] for e in eng]) 
 
-def calc_sigmaEL(SigmaER, eng, ef, beta):
-    """Calculates Σ_m(E)^< in lead m from Σ_m(E)^R 
+# def calc_sigmaEL(SigmaER, eng, ef, beta):
+#     """Calculates Σ_m(E)^< in lead m from Σ_m(E)^R 
 
-    Equation is
-        Σ_m(E)^< = i·Γ_m(E)·f(e-e_f),    Γ_m(E) = i·[Σ_m(E)^R - Σ_m(E)^A]
-        Σ_m(E)^< =-[Σ_m(E)^R - Σ_m(E)^A]·f(e-e_f)
-    where f(e-ef) is Fermi function."""
+#     Equation is
+#         Σ_m(E)^< = i·Γ_m(E)·f(e-e_f),    Γ_m(E) = i·[Σ_m(E)^R - Σ_m(E)^A]
+#         Σ_m(E)^< =-[Σ_m(E)^R - Σ_m(E)^A]·f(e-e_f)
+#     where f(e-ef) is Fermi function."""
 
-    return -(SigmaER - SigmaER.conj())*fermi(eng, ef, beta)
+#     return -(SigmaER - SigmaER.conj())*fermi(eng, ef, beta)
 
 # Green functions
 ## Energy domain
@@ -62,7 +63,7 @@ def calc_GEL(GER, SELs):
     """
     sel_mat = np.zeros(GER.shape, dtype=np.complex)
     for (SEL,i,j) in SELs:
-        sel_mat[:,i,i] = SEL[:]
+        sel_mat[:,i,j] = SEL[:]
     GEL = np.array([np.dot(GER[i], np.dot(sel_mat[i], GER[i].conj().T)) for i in range(GER.shape[0])])
     return GEL    
 
@@ -74,7 +75,7 @@ def calc_GtL(syst, t, i, j, Emin, Emax, eng_fermis, beta, quad_vec_kwargs={}):
 
     def integrand(e):
         wf = kwant.wave_function(syst, energy=e)
-        wf_abs = 0
+        wf_abs = np.zeros((t.shape[0],), dtype=np.complex)
         for lead in range(num_leads):
             num_channels = wf(lead).shape[0]
             for channel in range(num_channels):
@@ -91,7 +92,7 @@ def calc_GtR(syst, t, i, j, Emin, Emax, quad_vec_kwargs={}):
 
     def integrand(e):
         wf = kwant.wave_function(syst, energy=e)
-        wf_abs = 0
+        wf_abs = np.zeros((t.shape[0],), dtype=np.complex)
         for lead in range(num_leads):
             num_channels = wf(lead).shape[0]
             for channel in range(num_channels):
