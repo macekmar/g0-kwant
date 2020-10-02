@@ -3,5 +3,6 @@
 from setuptools import setup, find_packages
 
 setup(name='AB ring',
-      packages=find_packages()
+      packages=find_packages(),
+      zip_safe=False
     )

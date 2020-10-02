@@ -2,7 +2,9 @@ from AB_ring.geom.wire import *
 from AB_ring.geom.ring import *
 
 from AB_ring.physics.fermi import *
-from AB_ring.physics.calc_g0 import *
+from AB_ring.physics.calc_g0_time import *
+from AB_ring.physics.calc_g0_omega import *
+from AB_ring.physics.calc_g0_interpolator import *
 from AB_ring.physics.calc_transmission import *
 from AB_ring.physics.g0 import *
 from AB_ring.physics.selfenergy import *
