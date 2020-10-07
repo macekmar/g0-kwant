@@ -99,21 +99,21 @@ def calc_GELG(syst, omegas, eng_fermis, beta):
                 GEG[iw,:,:] += (-1)**channel * 1j * (fermi(w, eng_fermis[lead], beta)-1) * wf_val * wf_val.T.conj()
     return GEL, GEG
 
-def calc_GELG_fun(fun, nb_leads, nb_sites, omegas, eng_fermis, beta):
+def calc_GELG_fun(fun, nb_leads, i, j, k, w, eng_fermis, beta):
     """Calculates matrix G(E)^<,> from wavefunction.
     
-    `fun` is an interpolation of `kwant.wave_function(syst, energy=w)`
+    Parameters:
+    `fun`: an interpolation of `kwant.wave_function(syst, energy=w)`
+    `k`: scalar|vector of k
+    `w`: scalar|vector of omegas, related to k (dispertion relation)
 
-    Integrand from equation 22, 1307.6419
+    Integrand from equation 22, 1307.6419 but without exponential (time is 0).
     G(E)^> is the same but with (n_F(E) ‒ 1)."""
-    GEL = np.zeros((len(omegas), nb_sites, nb_sites), dtype=np.complex)
-    GEG = np.zeros((len(omegas), nb_sites, nb_sites), dtype=np.complex)
-    for iw, w in enumerate(omegas):
-        for lead in range(nb_leads):
-            nb_channels = wf(lead).shape[0]
-            for channel in range(nb_channels):
-                wf = np.array([fun(w, lead, channel, i) for i in range(nb_sites)])
-                wf_val = wf(lead)[channel][:,np.newaxis] * np.ones((1,nb_sites))
-                GEL[iw,:,:] += (-1)**channel * 1j * fermi(w, eng_fermis[lead], beta) * wf_val * wf_val.T.conj()
-                GEG[iw,:,:] += (-1)**channel * 1j * (fermi(w, eng_fermis[lead], beta)-1) * wf_val * wf_val.T.conj()
+    assert k.shape == w.shape
+    GEL = np.zeros((len(w)), dtype=np.complex)
+    GEG = np.zeros((len(w)), dtype=np.complex)
+    for lead in range(nb_leads):
+        for channel in range(1):
+            GEL += (-1)**channel * 1j * fermi(w, eng_fermis[lead], beta) * fun(k, lead, channel, i) * fun(k, lead, channel, j).conj()
+            GEG += (-1)**channel * 1j * (fermi(w, eng_fermis[lead], beta) -1) * fun(k, lead, channel, i) * fun(k, lead, channel, j).conj()
     return GEL, GEG
