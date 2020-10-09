@@ -19,15 +19,14 @@ class fun_piece():
         self.wf_val = -1
         self.wf_interp = None
         
-    def get_data(self, syst, world):
+    def get_data(self, syst):
         # world = MPI.COMM_WORLD
-        wf_val = np.zeros((len(self.engs), self.nb_leads, self.nb_channels, self.nb_sites), dtype=np.complex)
+        self.wf_val = np.zeros((len(self.engs), self.nb_leads, self.nb_channels, self.nb_sites), dtype=np.complex)
         for i, e in enumerate(self.engs):
-            if i % world.size == world.rank:
-                wf = kwant.wave_function(syst, energy=e)
-                wf_val[i, ...] = np.array([wf(j) for j in range(self.nb_leads)])
-        self.wv_val = world.allreduce(wf_val)
-        print(self.wv_val)
+            wf = kwant.wave_function(syst, energy=e)
+            self.wf_val[i, ...] = np.array([wf(j) for j in range(self.nb_leads)])
+        # self.wv_val = world.allreduce(wf_val)
+        # print(self.wv_val)
 
     def get_interpolators(self):
         self.wf_interp = [[[[None,None] for site in range(self.nb_sites)] for channel in range(self.nb_channels)] for lead in range(self.nb_leads)]
@@ -41,7 +40,7 @@ class fun_piece():
         return self.wf_interp[lead][channel][site][0](k) + 1j*self.wf_interp[lead][channel][site][1](k)
 
 class wave_fun():
-    def __init__(self, syst, nb_pts, eps, k_cut=[], gamma_wire=1.0):
+    def __init__(self, syst, nb_pts, eps, world=MPI.COMM_WORLD, gamma_wire=1.0):
         self.syst = syst
         self.nb_pts = nb_pts
         self.eps = eps
@@ -49,38 +48,56 @@ class wave_fun():
         self.nb_sites = self.syst.hamiltonian_submatrix().shape[0]
         self.nb_leads = 2
         self.nb_channels = 1
-
-        self.k_int = []
+        self.k_lim = []
         self.pieces = []
-        k_int = [[0, self.eps]] + k_cut + [[np.pi, self.eps]]
+
+        assert world.size % 2 == 0
+        nb_left = world.size//2
+        nb_right = world.size - nb_left
+        intervals = np.concatenate((np.linspace(0, np.pi/2, nb_left+1),
+                                    np.linspace(np.pi/2, np.pi, nb_right+1)))
+        k_int = np.array([[i, self.eps] for i in intervals])
+
+        k_int = np.delete(k_int, nb_left+1, axis=0)
+        # if world.rank == 0:
+        #     print(k_int)
+
         for i in range(1,len(k_int)):
             k_lim = [k_int[i-1][0] + k_int[i-1][1], k_int[i][0] - k_int[i][1]]
             k_vec = np.linspace(k_lim[0], k_lim[1], self.nb_pts)
             engs = 2*np.abs(self.gamma_wire)*np.cos(k_vec)
-            self.k_int.append(k_lim)
+            self.k_lim.append(k_lim)
             self.pieces.append(fun_piece(k_vec, engs, self.nb_sites, self.nb_leads, self.nb_channels))
-        for (k, eps_k) in k_cut:
+        for (k, eps_k) in k_int[1:-1,:]:
+            # Linear interpolation between the cuts
             k_lim = [k - eps_k, k + eps_k]
-            k_vec = np.linspace(k_lim[0], k_lim[1], 10)
+            k_vec = np.linspace(k_lim[0], k_lim[1], 4)
             engs = 2*np.abs(self.gamma_wire)*np.cos(k_vec)
-            self.k_int.append(k_lim)
+            self.k_lim.append(k_lim)
             self.pieces.append(fun_piece(k_vec, engs, self.nb_sites, self.nb_leads, self.nb_channels, interpolator=sc.interpolate.interp1d))
         
     def get_data(self, world):
         for i in range(len(self.pieces)):
-            self.pieces[i].get_data(self.syst, world)
-    
-    def get_interpolators(self):
+            if i % world.size == world.rank: 
+                self.pieces[i].get_data(self.syst)
+        world.barrier()
         for i in range(len(self.pieces)):
+            self.pieces[i] = world.bcast(self.pieces[i], root=i % world.size )
+    
+    def get_interpolators(self, world):
+        for i in range(len(self.pieces)):
+            # if world.rank == 0:
+            #     print(i)
+            #     print(self.pieces[i].k)
             self.pieces[i].get_interpolators()
 
 
     def __call__(self, k, lead, channel, site):
         if np.isscalar(k):
-            i = np.argmax([(k > k_[0]) and (k < k_[-1]) for k_ in self.k_int])
+            i = np.argmax([(k > k_[0]) and (k < k_[-1]) for k_ in self.k_lim])
             return self.pieces[i](k, lead, channel, site)
         else:
-            test = np.vstack([np.logical_and((k > k_[0]),  (k < k_[-1])) for k_ in self.k_int]).T
+            test = np.vstack([np.logical_and((k > k_[0]),  (k < k_[-1])) for k_ in self.k_lim]).T
             indices = np.argmax(test, axis=1)
             res = np.zeros((len(k)),dtype=np.complex)
             for i in range(len(k)) :
