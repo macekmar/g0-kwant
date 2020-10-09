@@ -104,10 +104,10 @@ class wave_fun_adapt():
         res = np.array([[wf(i).real, wf(i).imag] for i in range(self.nb_leads)])
         return np.moveaxis(res, 1, -1) #re, im should be last axis
 
-    def get_data(self, mpi=False):
+    def get_data(self, mpi=False, max_workes=4):
         learner = adaptive.Learner1D(self.wf_fun, bounds=[self.eps, np.pi - self.eps])
         if mpi:
-            runner = adaptive.Runner(learner, goal=lambda l: l.npoints > self.nb_pts, shutdown_executor=True, executor=MPIPoolExecutor())
+            runner = adaptive.Runner(learner, goal=lambda l: l.npoints > self.nb_pts, shutdown_executor=True, executor=MPIPoolExecutor(max_workers=max_workers))
             runner.ioloop.run_until_complete(runner.task)
         else:
             runner = adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > self.nb_pts)
