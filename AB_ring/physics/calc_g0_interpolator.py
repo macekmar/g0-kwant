@@ -4,6 +4,9 @@ import scipy as sc
 import numpy as np
 import kwant
 import adaptive
+from concurrent.futures import ProcessPoolExecutor
+
+
 
 class fun_piece():
     def __init__(self, k, engs, nb_sites, nb_leads, nb_channels, interpolator=sc.interpolate.Akima1DInterpolator):
@@ -107,7 +110,7 @@ class wave_fun_adapt():
     def get_data(self, mpi=False, max_workers=4):
         learner = adaptive.Learner1D(self.wf_fun, bounds=[self.eps, np.pi - self.eps])
         if mpi:
-            runner = adaptive.Runner(learner, goal=lambda l: l.npoints > self.nb_pts, shutdown_executor=True, executor=MPIPoolExecutor(max_workers=max_workers))
+            runner = adaptive.Runner(learner, goal=lambda l: l.npoints > self.nb_pts, shutdown_executor=True, executor=ProcessPoolExecutor(max_workers=max_workers))
             runner.ioloop.run_until_complete(runner.task)
         else:
             runner = adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > self.nb_pts)
