@@ -106,10 +106,11 @@ class wave_fun_adapt():
 
     def get_data(self, mpi=False):
         learner = adaptive.Learner1D(self.wf_fun, bounds=[self.eps, np.pi - self.eps])
-        # if mpi:
-        #     runner = adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > self.nb_pts, executor=MPIPoolExecutor())
-        # else:
-        runner = adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > self.nb_pts)
+        if mpi:
+            runner = adaptive.Runner(learner, goal=lambda l: l.npoints > self.nb_pts, shutdown_executor=True, executor=MPIPoolExecutor())
+            runner.ioloop.run_until_complete(runner.task)
+        else:
+            runner = adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > self.nb_pts)
 
         data = learner.data
         k_vec = np.fromiter(data.keys(), dtype=np.float)
