@@ -50,6 +50,16 @@ def integrand_GtL_intp(k, intp, i, j, t, eng_fermis, beta, e0, gamma):
             val += (-1)**channel * 1j/(2*np.pi) * fermi(e, eng_fermis[lead], beta) * intp(k, lead, channel, i) * np.conj(intp(k, lead, channel, j) * np.exp(1j*t*e))
     return  -2*np.abs(gamma)*np.sin(k)*np.stack((val.real, val.imag), -1)
 
+def integrand_GtL_intp_mat(k, intp, idx_i, idx_j, t, eng_fermis, beta, e0, gamma):
+    e = e0 + 2*np.abs(gamma)*np.cos(k)
+    val = np.zeros((t.shape[0], len(idx_i), len(idx_j)), dtype=np.complex)
+    for lead in range(2):
+        for channel in range(1):
+            wf1 = np.array([[intp(k, lead, channel, i) for i in row] for row in idx_i])
+            wf2 = np.array([[intp(k, lead, channel, i) for i in row] for row in idx_j]).conj()
+            val +=  (-1)**channel * 1j/(2*np.pi) * fermi(e, eng_fermis[lead], beta) * wf1 * wf2 * np.exp(-1j*t*e)[:,np.newaxis,np.newaxis]  
+    return  -2*np.abs(gamma)*np.sin(k)*np.stack((val.real, val.imag), -1)
+
 ###############################################################################
 ## Gt^>
 
@@ -92,6 +102,16 @@ def integrand_GtG_intp(k, intp, i, j, t, eng_fermis, beta, e0, gamma):
     for lead in range(2):
         for channel in range(1):
             val += (-1)**channel * 1j/(2*np.pi) * (fermi(e, eng_fermis[lead], beta)-1) * intp(k, lead, channel, i) * np.conj(intp(k, lead, channel, j) * np.exp(1j*t*e))
+    return  -2*np.abs(gamma)*np.sin(k)*np.stack((val.real, val.imag), -1)
+
+def integrand_GtG_intp_mat(k, intp, idx_i, idx_j, t, eng_fermis, beta, e0, gamma):
+    e = e0 + 2*np.abs(gamma)*np.cos(k)
+    val = np.zeros((t.shape[0], len(idx_i), len(idx_j)), dtype=np.complex)
+    for lead in range(2):
+        for channel in range(1):
+            wf1 = np.array([[intp(k, lead, channel, i) for i in row] for row in idx_i])
+            wf2 = np.array([[intp(k, lead, channel, i) for i in row] for row in idx_j]).conj()
+            val +=  (-1)**channel * 1j/(2*np.pi) * (fermi(e, eng_fermis[lead], beta)-1) * wf1 * wf2 * np.exp(-1j*t*e)[:,np.newaxis,np.newaxis]  
     return  -2*np.abs(gamma)*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
