@@ -112,7 +112,6 @@ def GER01_general(e, ed, gamma_dot, gamma_wire):
     """Returns G_{01}(E)^R for a quantum dot connected to wires.
 
     Calculated from an inverse of E - H - Σ(E)^R where H is a 2x2 matrix
-
                           γ'  γ'  γ   γ   γ'  γ'
                         ┄┄┄─○───○───◎───●───○─┄┄┄
                                     εd

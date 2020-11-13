@@ -6,7 +6,7 @@ from .fermi import fermi
 from .calc_sigma import *
 
 def calc_GER_inverse_from_SER(engs, ham, SERs):
-    """Calculates G(E)^R from matrix inversion using precalculate Σ(E)^R.
+    """Calculates G(E)^R from matrix inversion using precalculated Σ(E)^R.
     
     This is much faster, since most of the time spent in `calc_GER_inverse`
     is in calling `calc_sigmaER`.
@@ -19,7 +19,7 @@ def calc_GER_inverse_from_SER(engs, ham, SERs):
 
     Since matrix inverse is 𝓞(n³) it get slower with system size. At about
     100x100 it becomes slower than `calc_GELG`.
-    We should switch to `calc_GELG_fun`.
+    We should then switch to `calc_GELG_fun`.
 
     Σ(E)^R is a list of tuples:
             (self energies Σ_m(E)^R for lead m, i, j)

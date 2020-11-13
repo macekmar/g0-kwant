@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sc
 from .fermi import fermi
 
-# Analytical results from paper 1307.6419, Eq. C.3 and C.4 and my calculations
+# Analytical results from paper 1307.6419, Eq. C.3, C.4, and my calculations
 
 ## Self energy
 def SER(e):
@@ -32,9 +32,9 @@ def SER_general(e, gamma_att=1.0, gamma_lead=1.0):
 
     Equation is:
                     2               ______________
-                |γ"|  ⎛  E         ╱ ⎛  E  ⎞2
-                ───── ⎜───── ±    ╱  ⎜─────⎟  − 1
-                |γ'|  ⎝2|γ'|    ╲╱   ⎝2|γ'|⎠
+                |γ"|  ⎛  E         / ⎛  E  ⎞2
+                ───── ⎜───── ±    /  ⎜─────⎟  − 1
+                |γ'|  ⎝2|γ'|    \/   ⎝2|γ'|⎠
     for E < −1 (+) or E > 1 (-) and where γ' is hopping in the leads and 
     γ" is the hopping at the attachemnt. It is similar for −1 < E < 1.
     2|γ"| can be called half-bandwidth. 

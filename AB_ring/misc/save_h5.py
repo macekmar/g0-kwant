@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 
+# Reduntant after the switch to Py3 based keldy.
 
 def save_to_hdf(filename, param, t, gL, gG):
     """Saves g(t)< and g(t)> into a hdf5 compatible with `g0_model` in Keldy.
