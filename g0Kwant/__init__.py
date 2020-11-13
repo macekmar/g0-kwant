@@ -1,17 +1,17 @@
-from AB_ring.geom.wire import *
-from AB_ring.geom.ring import *
+from g0Kwant.geom.wire import *
+from g0Kwant.geom.ring import *
 
-from AB_ring.physics.fermi import *
-from AB_ring.physics.calc_g0_time import *
-from AB_ring.physics.calc_g0_omega import *
-from AB_ring.physics.calc_g0_interpolator import *
-from AB_ring.physics.calc_transmission import *
-from AB_ring.physics.g0 import *
-from AB_ring.physics.selfenergy import *
+from g0Kwant.physics.fermi import *
+from g0Kwant.physics.calc_g0_time import *
+from g0Kwant.physics.calc_g0_omega import *
+from g0Kwant.physics.calc_g0_interpolator import *
+from g0Kwant.physics.calc_transmission import *
+from g0Kwant.physics.g0 import *
+from g0Kwant.physics.selfenergy import *
 
-from AB_ring.misc.save_h5 import *
+from g0Kwant.misc.save_h5 import *
 
 __all__ = ["wire_with_quantum_dot", "beam_splitter", "ring",
-           "calc_GtL", "calc_GtR", "fermi",
+           "fermi",
            "calc_transmission",
            "save_to_hdf"]
