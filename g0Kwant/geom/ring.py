@@ -56,7 +56,7 @@ def beam_splitter(t, U, t_beam):
     return syst, lat
 
 
-def ring(t, U, t_beam, L, phase=0):
+def ring(t, U, t_beam, L, phase=([0,0],0), QD=([0,1], 0, 1)):
     """Creates an Aharonov-Bohm ring with beam splitters and mag. field
 
     Example where `len(t_beam)` = 3 and `L` = 3
@@ -88,8 +88,14 @@ def ring(t, U, t_beam, L, phase=0):
         syst[lat(i,1), lat(i+1,1)] = t
 
     # Add magnetic field
-    syst[lat(L//2,0), lat(L//2+1,0)] = t*np.exp(1j*phase)
-#     # Add quantum dot (TODO)
+    syst[lat(phase[0][0],phase[0][1]), lat(phase[0][0]+1,phase[0][1])] = t*np.exp(1j*phase[1])
+    # Add quantum dot
+    pos = QD[0]
+    eps_d = QD[1]
+    gamma = QD[2]
+    syst[lat(pos[0], pos[1])] = eps_d
+    syst[lat(pos[0]-1, pos[1]), lat(pos[0], pos[1])] = gamma
+    syst[lat(pos[0], pos[1]), lat(pos[0]+1, pos[1])] = gamma
 
     # Attach leads
     sym_lead = kwant.TranslationalSymmetry((-1, 0))
