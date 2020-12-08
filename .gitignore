@@ -1,3 +1,6 @@
 build/
 dist/
 g0Kwant.egg-info/
+.vscode/
+__pycache__/
+.gitignore
