@@ -28,7 +28,7 @@ def _beam_splitter(syst, lat, t, U, t_beam, L0=0):
         syst[lat(i, 0), lat(i + 1, 0)] = t
         syst[lat(i, 1), lat(i + 1, 1)] = t
     for il, i in enumerate(range(L0 + 1, L0 + L + 1)):
-        syst[lat(i, 0), lat(i, 1)] = t_beam[il-1]
+        syst[lat(i, 0), lat(i, 1)] = t_beam[il]
 
 def beam_splitter(t, U, t_beam):
     """Creates a beam splitter with leads attached.
