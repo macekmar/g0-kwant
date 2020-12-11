@@ -2,9 +2,14 @@ import kwant
 import numpy as np
 from .g0 import GER01_general
 from .selfenergy import SER_general
+import multiprocessing
+
+def _calc_trans(syst, e):
+    smatrix = kwant.smatrix(syst, e)
+    N = len(smatrix.lead_info)
+    return [[smatrix.transmission(j,i) for i in range(N)] for j in range(N)]
 
 def calc_transmission(syst, engs):
-    N = len(syst.leads)
     trans = []
 
     scalar = False
@@ -13,13 +18,28 @@ def calc_transmission(syst, engs):
         engs = [engs]
 
     for e in engs:
-        smatrix = kwant.smatrix(syst, e)
-        trans.append([[smatrix.transmission(j,i) for i in range(N)] for j in range(N)])
+        trans.append(_calc_trans(syst, e))
 
     if scalar:
         return trans[0]
     else:
         return np.array(trans)
+
+
+def calc_transmission_parallel(syst, engs, ncore=4):
+    scalar = False
+    if np.isscalar(engs):
+        scalar = True
+        engs = [engs]
+
+    p = multiprocessing.Pool(ncore)
+    trans = p.starmap(_calc_trans, zip(len(engs)*[syst], engs))
+    p.close()
+    if scalar:
+        return trans[0]
+    else:
+        return np.array(trans)
+
 
 def transmisson_QD_wire(engs, eps_d, gamma_dot, gamma_wire):
     """Calculates transmission for a QD in a 1D nanowire.
