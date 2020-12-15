@@ -1,7 +1,7 @@
 import h5py
 import numpy as np
 
-# Reduntant after the switch to Py3 based keldy.
+# Redundant after the switch to Py3 based keldy.
 
 def save_to_hdf(filename, param, t, gL, gG):
     """Saves g(t)< and g(t)> into a hdf5 compatible with `g0_model` in Keldy.
@@ -65,11 +65,11 @@ def save_to_hdf(filename, param, t, gL, gG):
         for spin in ["up", "down"]:
             assert gL.shape == gG.shape
             shape = list(gL.shape) + [2]
-            
+
             dset = g0_lesser[spin].create_dataset("data", shape, compression="gzip", compression_opts=9, dtype="d")
             data = np.concatenate((gL[..., np.newaxis].real, gL[..., np.newaxis].imag), axis=-1 ).real
             dset[:] = data[:]
-            
+
             dset = g0_greater[spin].create_dataset("data", shape, compression="gzip", compression_opts=9, dtype="d")
             data = np.concatenate((gG[..., np.newaxis].real, gG[..., np.newaxis].imag), axis=-1 ).real
             dset[:] = data[:]

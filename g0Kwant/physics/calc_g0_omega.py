@@ -1,3 +1,22 @@
+# # Green functions in energy domain for a general Kwant `FiniteSystem`
+#
+# Green functions can be calculated in two ways:
+#   - by inversion G(E)^R = 1/(E·I - H - ∑_m Σ_m(E)^R) and then
+#     calculating G(E)^{<,>}
+#   - G^{<,>} from the wave function (How to get G^R, G^A?)
+#
+# Inversion is only faster for small system sizes (about 100×100) and if we
+# have a formula for the self energy, this is `calc_GER_inverse_from_SER`.
+# Formula can also be an interpolation.
+# Without the precalculated self energies, it is just as slow as the
+# calculation with the wave function, this is `calc_GER_inverse`.
+#
+# The wave function approach is slow because we have to solve a linear system
+# for each energy (Why is this slower than calculating inverses?)
+# We could do an interpolation, but it seems we need just as many point for the
+# interpolation as we are intersted it. In practice it is not worth it.
+# These functions are `calc_GELG` and `calc_GELG_fun`.
+
 import kwant
 import numpy as np
 import scipy as sc
@@ -5,36 +24,30 @@ import scipy as sc
 from .fermi import fermi
 from .calc_sigma import *
 
+
 def calc_GER_inverse_from_SER(engs, ham, SERs):
     """Calculates G(E)^R from matrix inversion using precalculated Σ(E)^R.
-    
-    This is much faster, since most of the time spent in `calc_GER_inverse`
-    is in calling `calc_sigmaER`.
-    If Σ(E)^R is not the same as `SER_general` in `selfenergy.py` one could
-    first interpolate Σ(E)^R in few points (e.g. 1000) and then call this
-    function in many points (e.g. 1e6).
 
-    Hamiltonian does not have yet added Σ(E)^R. In short:
-    `ham = syst.hamiltonian_subystem()`
+    Equation:
+        G(E)^R = 1/(E·I - H - ∑_m Σ_m(E)^R)
+    Σ_m(E)^R is supplied by user in `SERs`.
 
-    Since matrix inverse is 𝓞(n³) it get slower with system size. At about
-    100x100 it becomes slower than `calc_GELG`.
-    We should then switch to `calc_GELG_fun`.
+    Parameters
+    ----------
+    engs : 1D numpy array
 
-    Σ(E)^R is a list of tuples:
-            (self energies Σ_m(E)^R for lead m, i, j)
-    where inidices i,j are such that
-            [Σ(E)^R]_ij = Σ_m(E)^<.
+    ham : 2D numpy array
+        Hamiltonian without the self energies, `syst.hamiltonian_subsystem()`
+    SERs : list of tuples (Σ_m(E)^R, i, j),
+        Σ_m(E)^R is a self energies for lead m attached in sites i, j
     """
 
-    # (ε·I - H)⁻¹
     mat = np.tensordot(engs, np.eye(*ham.shape, dtype=np.complex), axes=0)
     mat -= ham
-    # self energies are missing in H
     for (se, i, j) in SERs:
         mat[:,i,j] -= se
-    
-    return np.array([np.linalg.inv(m) for m in mat]) 
+    return np.array([np.linalg.inv(m) for m in mat])
+
 
 def calc_GER_inverse(syst, engs):
     """Calculates G(E)^R from matrix inversion using Kwant.
@@ -42,6 +55,12 @@ def calc_GER_inverse(syst, engs):
     Equation:
         G(E)^R = 1/(E·I - H - ∑_m Σ_m(E)^R)
     Σ_m(E)^R is calculated from `syst`.
+
+    Parameters
+    ----------
+    syst : Kwant FiniteSystem
+
+    engs : scalar or 1D numpy array
     """
     H_mat = syst.hamiltonian_submatrix()
     lead_pos = syst.lead_interfaces
@@ -61,18 +80,20 @@ def calc_GER_inverse(syst, engs):
             GER.append(_calc_GER(e))
         return np.array(GER)
 
+
 def calc_GELG_inverse(GER, SEs):
     """Calculates matrix G(E)^<,> from G(E)^R and Σ(E)^<,>.
 
-    You have to call it twice with Σ(E)^< and Σ(E)^>.
-    
-    Σ(E)^<,> is a list of tuples:
-        (self energies Σ_m(E)^<,> for lead m, i, j)
-    where inidices i,j are such that
-        [Σ(E)^<,>]_ij = Σ_m(E)^<.
-    
-    It calculates it from formula:
+    Equation:
         G(E)^<,> = G(E)^R · Σ(E)^<,> · G(E)^A   (Datta, Eq. 8.3.1)
+    You have to call it twice with Σ(E)^< and Σ(E)^>.
+
+    Parameters
+    ----------
+    GER : 3D np.array or a list of 2D np.arrays
+        G(E)^R, first axis are energies
+    SERs : list of tuples (Σ_m(E)^R, i, j),
+        Σ_m(E)^R is a self energy for lead m attached in sites i, j
     """
     se_mat = np.zeros(GER.shape, dtype=np.complex)
     for (SE,i,j) in SEs:
@@ -80,11 +101,23 @@ def calc_GELG_inverse(GER, SEs):
     GEL = np.array([np.dot(GER[i], np.dot(se_mat[i], GER[i].conj().T)) for i in range(GER.shape[0])])
     return GEL
 
+
 def calc_GELG(syst, omegas, eng_fermis, beta):
-    """Calculates matrix G(E)^<,> from wavefunction.
-    
-    Integrand from equation 22, 1307.6419
-    G(E)^> is the same but with (n_F(E) ‒ 1)."""
+    """Calculates G(E)^<,> from the wave function.
+
+    Integrand from equation 22, 1307.6419 but without the exponential (t=0).
+    G(E)^> is the same but with (n_F(E) ‒ 1).
+
+    Parameters
+    ----------
+    syst : Kwant FiniteSystem
+
+    omegas : list or 1D np.array of omegas
+
+    eng_fermis : list of Fermi energies for the leads
+
+    beta : inverse temperature
+    """
     nb_leads = len(syst.leads)
     nb_sites = syst.hamiltonian_submatrix().shape[0]
     GEL = np.zeros((len(omegas), nb_sites, nb_sites), dtype=np.complex)
@@ -99,16 +132,30 @@ def calc_GELG(syst, omegas, eng_fermis, beta):
                 GEG[iw,:,:] += (-1)**channel * 1j * (fermi(w, eng_fermis[lead], beta)-1) * wf_val * wf_val.T.conj()
     return GEL, GEG
 
-def calc_GELG_fun(fun, nb_leads, i, j, k, w, eng_fermis, beta):
-    """Calculates matrix G(E)^<,> from wavefunction.
-    
-    Parameters:
-    `fun`: an interpolation of `kwant.wave_function(syst, energy=w)`
-    `k`: scalar|vector of k
-    `w`: scalar|vector of omegas, related to k (dispertion relation)
 
-    Integrand from equation 22, 1307.6419 but without exponential (time is 0).
-    G(E)^> is the same but with (n_F(E) ‒ 1)."""
+def calc_GELG_fun(fun, nb_leads, i, j, k, w, eng_fermis, beta):
+    """Calculates G(E)^<,> from the interpolation of the wave function.
+
+    Integrand from equation 22, 1307.6419 but without the exponential (t=0).
+    G(E)^> is the same but with (n_F(E) ‒ 1).
+
+    Parameters
+    ----------
+    fun :  
+        Interpolation of `kwant.wave_function(syst, energy=w)`
+
+    k_vecs : 1D numpy array
+
+    omegas : 1D numpy array
+        omegas related to k_vecs by dispertion relation ε(k)
+    nb_leads : number of leads
+
+    i and j : integers
+
+    eng_fermis : list of Fermi energies for the leads
+
+    beta : inverse temperature
+    """
     assert k.shape == w.shape
     GEL = np.zeros((len(w)), dtype=np.complex)
     GEG = np.zeros((len(w)), dtype=np.complex)

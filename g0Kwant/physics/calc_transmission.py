@@ -1,15 +1,21 @@
+# # Calculations of transmissions
+
 import kwant
 import numpy as np
 from .g0 import GER01_general
 from .selfenergy import SER_general
 import multiprocessing
 
+
 def _calc_trans(syst, e):
+    """Calculates transmission matrix for a system `syst` in energy `e`."""
     smatrix = kwant.smatrix(syst, e)
     N = len(smatrix.lead_info)
     return [[smatrix.transmission(j,i) for i in range(N)] for j in range(N)]
 
+
 def calc_transmission(syst, engs):
+    """Calculates transmission matrix for a system `syst` in energies `engs`."""
     trans = []
 
     scalar = False
@@ -27,6 +33,10 @@ def calc_transmission(syst, engs):
 
 
 def calc_transmission_parallel(syst, engs, ncore=4):
+    """Calculates transmission matrix for a system `syst` in energies `engs`.
+
+    Parallel version using multiprocessing. Useful in notebooks.
+    """
     scalar = False
     if np.isscalar(engs):
         scalar = True
@@ -42,13 +52,9 @@ def calc_transmission_parallel(syst, engs, ncore=4):
 
 
 def transmisson_QD_wire(engs, eps_d, gamma_dot, gamma_wire):
-    """Calculates transmission for a QD in a 1D nanowire.
+    """Calculates transmission for a QD in a 1D wire.
 
-    gamma_dot  - hopping between a QD and the leads
-    gamma_wire - hopping in the leads
-    eps_d      - energy level of the QD
-
-    It is calculated from:
+    Equation
         Tₖₗ = Tr[ΓₖGᴿΓₗGᴬ]
     where
         Γₖ = i[ Σₖᴿ - Σₖᴬ ] = -‒2 Im Σₖᴿ
@@ -57,18 +63,26 @@ def transmisson_QD_wire(engs, eps_d, gamma_dot, gamma_wire):
                           γ'  γ'  γ   γ   γ'  γ'
                         ┄┄┄─○───○─[──◎───●─]─○─┄┄┄
                                     εd
-    The result for transmisson from right to left is
+    The result for transmission from right to left is
         Tₗᵣ = Γₗ · Γᵣ · |G₀₁ᴿ|²
-    """
 
+    Paramters
+    ---------
+    gamma_dot : hopping between a QD and the leads
+
+    gamma_wire : hopping in the leads
+
+    eps_d : energy level of the QD
+    """
     Gl = -2*SER_general(engs, gamma_att=gamma_dot, gamma_lead=gamma_wire).imag
     Gr = -2*SER_general(engs, gamma_att=gamma_wire, gamma_lead=gamma_wire).imag
     return Gl*Gr*np.abs(GER01_general(engs, eps_d, gamma_dot, gamma_wire))**2
 
+
 def transmission_QD_wire_peak_pos(eps_d, gamma_dot, gamma_wire):
-    """Returns energies of the peak and FWHM.
-    
-    Calculated from the analytical formula for `transmisson_QD_wire`:
+    """Returns the energies of the transmission T_12 peak and FWHM.
+
+    Calculated from the analytical formula for `transmission_QD_wire`:
                                     1
                 T₁₂ =  ─────────────────────────────
                         (k² - 1)²(e₀-e)²/(1-e²) + 1
@@ -76,7 +90,6 @@ def transmission_QD_wire_peak_pos(eps_d, gamma_dot, gamma_wire):
                 e  = E/(2·γ_wire)
                 e₀ = [k²/(k² - 1)]·εd / (2·γ_wire)
     """
-
     k = gamma_wire/gamma_dot
 
     # Usually this is the maximum position:

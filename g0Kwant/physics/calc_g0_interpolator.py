@@ -40,6 +40,17 @@ class fun_piece():
         return self.wf_interp[lead][channel][site][0](k) + 1j*self.wf_interp[lead][channel][site][1](k)
 
 class wave_fun():
+    """Build an interpolation of a wave function using uniformly spaced points.
+    
+    This one is intended for the cluster.
+    There is a discontinuity at k = π/2 (TODO: Is this always true, it is not the only one...)
+    
+    Parameters:
+        syst : finalized Kwant system
+        nb_pts : number of points for the interpolation
+        eps : how close to the band edges we go, we sample in [-D + ε, D - ε].
+        gamma_wire : γ in the wires, needed for the dispertion relation ε(k).
+    """
     def __init__(self, syst, nb_pts, eps, world=MPI.COMM_WORLD, gamma_wire=1.0):
         self.syst = syst
         self.nb_pts = nb_pts
@@ -106,6 +117,18 @@ class wave_fun():
 
 
 class wave_fun_adapt():
+    """Build an interpolation of a wave function using adaptive package.
+    
+    Adaptive: https://github.com/python-adaptive/adaptive
+    Adaptive puts more points for the interpolation where changes are larger.
+    At the moment, adaptive does not parallelize well on a cluster.
+    
+    Parameters:
+        syst : finalized Kwant system
+        nb_pts : number of points for the interpolation
+        eps : how close to the band edges we go, we sample k ∈ [ε, π - ε].
+        gamma_wire : γ in the wires, needed for the dispertion relation ε(k).
+    """
     def __init__(self, syst, nb_pts, eps, gamma_wire=1.0):
         self.syst = syst
         self.nb_pts = nb_pts
@@ -118,14 +141,24 @@ class wave_fun_adapt():
         self.wf_val = None
         self.wf_interp = None
 
-    def wf_fun(self, k):
+    def wf(self, k):
+        """ Calculates wave function at wave vector k.
+
+        kwant calculates at some energy, whereas we provide wave vector k.
+        Returns an array of size: 
+            nb_leads × nb_channels × nb_sites × 2 (Re, Im)."""
+
         e = 2*np.abs(self.gamma_wire)*np.cos(k)
         wf = kwant.wave_function(self.syst, energy=e)
         res = np.array([[wf(i).real, wf(i).imag] for i in range(self.nb_leads)])
         return np.moveaxis(res, 1, -1) #re, im should be last axis
 
     def get_data(self, mpi=False, max_workers=4):
-        learner = adaptive.Learner1D(self.wf_fun, bounds=[self.eps, np.pi - self.eps])
+        """Gathers data using adapative package.
+
+        Note: adaptive can use mpi but I have not managed to use it
+        successfully. """
+        learner = adaptive.Learner1D(self.wf, bounds=[self.eps, np.pi - self.eps])
         if mpi:
             runner = adaptive.Runner(learner, goal=lambda l: l.npoints > self.nb_pts, shutdown_executor=True, executor=ProcessPoolExecutor(max_workers=max_workers))
             runner.ioloop.run_until_complete(runner.task)
@@ -142,6 +175,7 @@ class wave_fun_adapt():
         self.wf_val = vals
 
     def get_interpolators(self, interpolator=sc.interpolate.Akima1DInterpolator):
+        """Builds interpolators from gathered data."""
         self.wf_interp = [[[[None,None] for site in range(self.nb_sites)] for channel in range(self.nb_channels)] for lead in range(self.nb_leads)]
         for lead in range(self.nb_leads):
             for channel in range(self.nb_channels):  # caveat: at different energies a different number of channels can be opened!

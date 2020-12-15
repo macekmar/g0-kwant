@@ -1,6 +1,7 @@
 import kwant
 import numpy as np
 
+
 def _beam_splitter(syst, lat, gamma_beam, eps_i, gamma_wire, L0=0):
     """Creates a beam splitter starting at position L0 without leads.
 
@@ -12,10 +13,13 @@ def _beam_splitter(syst, lat, gamma_beam, eps_i, gamma_wire, L0=0):
                     |       |           |
                     L0      L0+2        L0+5   <── positions
 
-    `gamma_beam` : 1D array, length L: vertical hopping in the beam
-    `eps_i`      : on site potential in the leads (● and ⋯)
-    `gamma_wire` : horizontal hopping in the leads (●──●, ●──○ and ○‒⋯)
-    `L0`         : starting position of the beam
+    gamma_beam : 1D array, length L:
+        vertical hopping in the beam
+    eps_i :
+        on site potential in the leads (● and ⋯)
+    gamma_wire :
+        horizontal hopping in the leads (●──●, ●──○ and ○‒⋯)
+    L0 : starting position of the beam
     """
 
     L = len(gamma_beam)
@@ -30,12 +34,17 @@ def _beam_splitter(syst, lat, gamma_beam, eps_i, gamma_wire, L0=0):
     for il, i in enumerate(range(L0 + 1, L0 + L + 1)):
         syst[lat(i, 0), lat(i, 1)] = gamma_beam[il]
 
+
 def beam_splitter(gamma_beam, eps_i=0, gamma_wire=1):
     """Creates a beam splitter with leads attached.
 
-    `gamma_beam` : 1D array, length L: vertical hopping in the beam
-    `eps_i`      : on site potential in the leads (● and ⋯)
-    `gamma_wire` : horizontal hopping in the leads (●──●, ●──○ and ○‒⋯)
+    gamma_beam : 1D array, length L
+        vertical hopping in the beam
+    eps_i : 
+        on site potential in the leads (● and ⋯)
+
+    gamma_wire :
+        horizontal hopping in the leads (●──●, ●──○ and ○‒⋯)
     """
 
     lat = kwant.lattice.square(1.0)
@@ -71,12 +80,18 @@ def ring(L, QD, phase, gamma_beam, eps_i=0, gamma_wire=1):
                 |               |   |   |  
                -L_beam-1        0   1   L-1                <── positions
 
-    `L` : length of the ring
-    `QD`: parameters for the quantum dot: (εd, γ) or ((x,y), εd, γ)
-    `phase`: parameters for phase: phase or ((x,y), phase)
-    `gamma_beam` : 1D array, length L: vertical hopping in the beam
-    `eps_i`      : on site potential in the leads (● and ⋯)
-    `gamma_wire` : horizontal hopping in the leads (●──●, ●──○ and ○‒⋯)
+    L : 
+        length of the ring
+    QD :
+        parameters for the quantum dot: (εd, γ) or ((x,y), εd, γ)
+    phase :
+        parameters for phase: phase or ((x,y), phase)
+    gamma_beam : 1D array, length L
+        vertical hopping in the beam
+    eps_i :
+        on site potential in the leads (● and ⋯)
+    gamma_wire :
+        horizontal hopping in the leads (●──●, ●──○ and ○‒⋯)
 
     """
     lat = kwant.lattice.square(1.0)
@@ -104,7 +119,7 @@ def ring(L, QD, phase, gamma_beam, eps_i=0, gamma_wire=1):
         i, j = phase[0]
         phi = phase = 1
     syst[lat(i, j), lat(i+1, j)] = gamma_wire*np.exp(1j*phi)
-    
+
     # Add quantum dot
     assert len(QD) == 2 or len(QD) == 3
     if len(QD) == 2:
