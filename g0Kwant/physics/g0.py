@@ -70,7 +70,7 @@ def GEL00(eng, ef):
                         ])
 
 
-def GEL00_general(eng, ef1, ef2, beta, eps_d, gamma, gamma_wire):
+def GEL00_general(eng, eps_d, gamma, ef1, ef2, beta, gamma_wire=1):
     """Returns G_{00}(E)^< for a quantum dot connected to wires.
 
     Calculated from equation
@@ -122,7 +122,7 @@ def GER01(eng):
     return 1.0/2.0*(e - k)/k
 
 
-def GER01_general(eng, eps_d, gamma, gamma_wire):
+def GER01_general(eng, eps_d, gamma, gamma_wire=1):
     """Returns G_{01}(E)^R for a quantum dot connected to wires.
 
     Calculated from an inverse of E - H - Σ(E)^R where H is a 2x2 matrix

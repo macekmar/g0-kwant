@@ -51,7 +51,7 @@ def calc_transmission_parallel(syst, eng, num_core=4):
         return np.array(trans)
 
 
-def transmission_QD_wire(eng, eps_d, gamma, gamma_wire):
+def transmission_QD_wire(eng, eps_d, gamma, gamma_wire=1):
     """Calculates transmission for a QD in a 1D wire.
 
     Equation

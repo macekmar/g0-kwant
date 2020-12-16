@@ -24,7 +24,7 @@ from .fermi import fermi
 from .calc_sigma import calc_SigmaER
 
 
-def calc_GER_inverse_from_SER(eng, ham, SERs):
+def calc_GER_inverse_from_SER(ham, eng, SERs):
     """Calculates G(E)^R from matrix inversion using precalculated Σ(E)^R.
 
     Equation:
@@ -135,7 +135,7 @@ def calc_GELG(syst, eng, ef, beta):
     return GEL, GEG
 
 
-def calc_GELG_fun(fun, nb_leads, i, j, k, eng, ef, beta):
+def calc_GELG_fun(fun, k, eng, nb_leads, i, j, ef, beta):
     """Calculates G(E)^<,> from the interpolation of the wave function.
 
     Integrand from equation 22, 1307.6419 but without the exponential (t=0).

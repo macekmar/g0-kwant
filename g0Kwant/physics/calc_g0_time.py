@@ -69,7 +69,7 @@ def calc_Gt_integral(integrand, k_min, k_max, quad_vec_kwargs={"workers": 4, "fu
     return Gt, integral[1:]
 
 
-def integrand_GtL(k, syst, i, j, t, ef, beta, eps_i, gamma_wire):
+def integrand_GtL(syst, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (22) in 1307.6419 for G(t)<.
 
     Parameters
@@ -78,9 +78,9 @@ def integrand_GtL(k, syst, i, j, t, ef, beta, eps_i, gamma_wire):
 
         k : wave vector
 
-        i and j : site indices
-
         t : np.array for which g_ij(t)< is calculated
+
+        i and j : site indices
 
         ef : list of Fermi energies, one for each lead
 
@@ -102,7 +102,7 @@ def integrand_GtL(k, syst, i, j, t, ef, beta, eps_i, gamma_wire):
     return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
-def integrand_GtG(k, syst, i, j, t, ef, beta, eps_i, gamma_wire):
+def integrand_GtG(syst, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (22) in 1307.6419 for G(t)>.
 
     Parameters
@@ -111,9 +111,9 @@ def integrand_GtG(k, syst, i, j, t, ef, beta, eps_i, gamma_wire):
 
         k : wave vector
 
-        i and j : site indices
-
         t : np.array for which g_ij(t)> is calculated
+
+        i and j : site indices
 
         ef : list of Fermi energies, one for each lead
 
@@ -135,7 +135,7 @@ def integrand_GtG(k, syst, i, j, t, ef, beta, eps_i, gamma_wire):
     return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
-def integrand_GtR(k, syst, i, j, t, eps_i, gamma_wire):
+def integrand_GtR(syst, k, t, i, j, eps_i=0, gamma_wire=1):
     e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
     wf = kwant.wave_function(syst, energy=e)
@@ -148,7 +148,7 @@ def integrand_GtR(k, syst, i, j, t, eps_i, gamma_wire):
     return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
-def integrand_Gt_control(k, syst, i, eps_i, gamma_wire):
+def integrand_Gt_control(syst, k, i, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (26) in 1307.6419 for |G(t)|².
 
     Parameters
@@ -183,7 +183,7 @@ def calc_GtG_from_GtLR(t, GtL, GtR):
 ###############################################################################
 # # Gt^<
 
-def calc_GtL_E(syst, t, i, j, Emin, Emax, ef, beta, quad_vec_kwargs={}):
+def calc_GtL_E(syst, t, i, j, ef, beta, Emin, Emax, quad_vec_kwargs={}):
     """Calculates g(t)< with integration in the energy domain.
 
     Deprecated. Integration in k-domain is faster.
@@ -195,12 +195,12 @@ def calc_GtL_E(syst, t, i, j, Emin, Emax, ef, beta, quad_vec_kwargs={}):
 
         i and j : indices i,j in g_ij(t)<
 
-        Emin and Emax :
-            limits of integration. Integral diverges at the band limits.
-
         ef : list of Fermi energies, one for each lead
 
         beta : inverse temperature
+
+        Emin and Emax :
+            limits of integration. Integral diverges at the band limits.
 
         quad_vec_kwargs : arguments for `scipy.integrate.quad_vec`.
     """
@@ -223,7 +223,7 @@ def calc_GtL_E(syst, t, i, j, Emin, Emax, ef, beta, quad_vec_kwargs={}):
     return GtL, integral[1:]
 
 
-def integrand_GtL_intp(k, intp, i, j, t, ef, beta, eps_i, gamma_wire):
+def integrand_GtL_intp(intp, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (22) in 1307.6419 for G(t)< using interpolation."""
     e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
@@ -235,7 +235,7 @@ def integrand_GtL_intp(k, intp, i, j, t, ef, beta, eps_i, gamma_wire):
     return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
-def integrand_GtL_intp_mat(k, intp, idx_i, idx_j, t, ef, beta, eps_i, gamma_wire):
+def integrand_GtL_intp_mat(intp, k, t, idx_i, idx_j, ef, beta, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (22) in 1307.6419 for G(t)< using interpolation.
 
     This function gives the whole matrix [Gᵢⱼ]. Integrating the whole matrix is
@@ -262,7 +262,7 @@ def integrand_GtL_intp_mat(k, intp, idx_i, idx_j, t, ef, beta, eps_i, gamma_wire
 # # Gt^<
 
 
-def calc_GtG_E(syst, t, i, j, Emin, Emax, ef, beta, quad_vec_kwargs={}):
+def calc_GtG_E(syst, t, i, j, ef, beta, Emin, Emax, quad_vec_kwargs={}):
     """Calculates g(t)> with integration in the energy domain.
 
     Deprecated. Integration in k-domain is faster.
@@ -274,12 +274,12 @@ def calc_GtG_E(syst, t, i, j, Emin, Emax, ef, beta, quad_vec_kwargs={}):
 
         i and j : indices i,j in g_ij(t)<
 
-        Emin and Emax :
-            limits of integration. Integral diverges at the band limits.
-
         ef : list of Fermi energies, one for each lead
 
         beta : inverse temperature
+
+        Emin and Emax :
+            limits of integration. Integral diverges at the band limits.
 
         quad_vec_kwargs : arguments for `scipy.integrate.quad_vec`.
     """
@@ -303,7 +303,7 @@ def calc_GtG_E(syst, t, i, j, Emin, Emax, ef, beta, quad_vec_kwargs={}):
     return GtG, integral[1:]
 
 
-def integrand_GtG_intp(k, intp, i, j, t, ef, beta, eps_i, gamma_wire):
+def integrand_GtG_intp(intp, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (22) in 1307.6419 for G(t)> using interpolation."""
     e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
@@ -316,7 +316,7 @@ def integrand_GtG_intp(k, intp, i, j, t, ef, beta, eps_i, gamma_wire):
     return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
-def integrand_GtG_intp_mat(k, intp, idx_i, idx_j, t, ef, beta, eps_i, gamma_wire):
+def integrand_GtG_intp_mat(intp, k, t, idx_i, idx_j, ef, beta, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (22) in 1307.6419 for G(t)< using interpolation.
 
     This function gives the whole matrix [Gᵢⱼ]. Integrating the whole matrix is
@@ -363,7 +363,7 @@ def calc_GtR_E(syst, t, i, j, Emin, Emax, quad_vec_kwargs={}):
     return GtR, integral[1:]
 
 
-def integrand_GtR_intp(k, intp, i, j, t, eps_i, gamma_wire):
+def integrand_GtR_intp(intp, k, t, i, j, eps_i=0, gamma_wire=1):
     e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
     for lead in range(2):
@@ -413,7 +413,7 @@ def calc_Gt_control_E(syst, i, Emin, Emax, quad_vec_kwargs={}):
     return val, integral[1:]
 
 
-def integrand_Gt_control_intp(k, intp, i, eps_i, gamma_wire):
+def integrand_Gt_control_intp(intp, k, i, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (26) in 1307.6419 for |G(t)|² using interpolation."""
     e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
     val = 0
