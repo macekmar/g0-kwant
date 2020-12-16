@@ -8,7 +8,7 @@ import scipy as sc
 from .fermi import fermi
 
 
-def SER(e):
+def SigmaER(e):
     """Returns Σ(E)^R for a perfect lead with γ = 1.
 
     Eq. (C.3) in 1307.6419.
@@ -21,7 +21,7 @@ def SER(e):
                 lambda e: (e - np.sqrt(e**2 - 1))   ])
 
 
-def SEL(e, ef):
+def SigmaEL(e, ef):
     """Returns Σ(E)^< for a perfect lead with γ = 1.
 
     Eq. (C.4) in 1307.6419.
@@ -34,7 +34,7 @@ def SEL(e, ef):
                 lambda e: 0   ])
 
 
-def SER_general(e, gamma_att=1.0, gamma_lead=1.0):
+def SigmaER_general(e, gamma_att=1.0, gamma_lead=1.0):
     """Returns Σ(E)^R for a perfect lead with general hoppings.
 
     The equation is:
@@ -63,7 +63,7 @@ def SER_general(e, gamma_att=1.0, gamma_lead=1.0):
                 lambda e: (e - np.sqrt(e**2 - 1))   ])
 
 
-def SEL_general(e, ef, beta, gamma_att=1.0, gamma_lead=1.0):
+def SigmaEL_general(e, ef, beta, gamma_att=1.0, gamma_lead=1.0):
     """Returns Σ(E)^< for a perfect lead with general hoppings.
 
     It is calculated from Eq. (19) and (20) in 1307.6419:

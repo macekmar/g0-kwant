@@ -69,7 +69,7 @@ def calc_GER_inverse(syst, engs):
     def _calc_GER(e):
         mat = e*np.eye(N,M) - H_mat
         for lead, pos in enumerate(lead_pos):
-            mat[pos[0],pos[0]] -= calc_sigmaER(syst, lead, e)
+            mat[pos[0],pos[0]] -= calc_SigmaER(syst, lead, e)
         return np.linalg.inv(mat)
 
     GER = []

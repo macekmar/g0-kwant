@@ -1,4 +1,4 @@
-# # Calculation of self energies (Σ, sigma) for a general Kwant `FiniteSystem`
+# # Calculation of self energies (Σ, Sigma) for a general Kwant `FiniteSystem`
 
 import kwant
 import numpy as np
@@ -6,7 +6,7 @@ import numpy as np
 from .fermi import fermi
 
 
-def calc_sigmaER(syst, lead, eng):
+def calc_SigmaER(syst, lead, eng):
     """Calculates Σ_i(E)^R using Kwant.
 
     Parameters
@@ -23,31 +23,31 @@ def calc_sigmaER(syst, lead, eng):
         return np.array([syst.leads[lead].selfenergy(e)[0, 0] for e in eng])
 
 
-def calc_sigmaEL(syst, lead, eng, ef, beta):
-    """Calculates Σ_i(E)^< via calc_sigmaER.
+def calc_SigmaEL(syst, lead, eng, ef, beta):
+    """Calculates Σ_i(E)^< via calc_SigmaER.
 
     Equation is
         Σ_i(E)^< = -i Γ_i(E) f_i(E)
     where
         Γ_i(E) = i (Σ_i(E)^R - Σ_i(E)^A)
     """
-    sigmaER = calc_sigmaER(syst, lead, eng)
-    return -(sigmaER - sigmaER.conj()) * fermi(eng, ef, beta)
+    SigmaER = calc_SigmaER(syst, lead, eng)
+    return -(SigmaER - SigmaER.conj()) * fermi(eng, ef, beta)
 
 
-def calc_sigmaEG(syst, lead, eng, ef, beta):
-    """Calculates Σ_i(E)^> via calc_sigmaER.
+def calc_SigmaEG(syst, lead, eng, ef, beta):
+    """Calculates Σ_i(E)^> via calc_SigmaER.
 
     Equation is
         Σ_i(E)^> = -i Γ_i(E) (f_i(E) ‒ 1)
     where
         Γ_i(E) = i (Σ_i(E)^R - Σ_i(E)^A)
     """
-    sigmaER = calc_sigmaER(syst, lead, eng)
-    return -(sigmaER - sigmaER.conj()) * (fermi(eng, ef, beta) - 1)
+    SigmaER = calc_SigmaER(syst, lead, eng)
+    return -(SigmaER - SigmaER.conj()) * (fermi(eng, ef, beta) - 1)
 
 
-def calc_sigmaEL_from_sigmaER(SigmaER, eng, ef, beta):
+def calc_SigmaEL_from_SigmaER(SigmaER, eng, ef, beta):
     """Calculates Σ_m(E)^< in lead m from Σ_m(E)^R
 
     Equation is
@@ -69,7 +69,7 @@ def calc_sigmaEL_from_sigmaER(SigmaER, eng, ef, beta):
     return -(SigmaER - SigmaER.conj()) * fermi(eng, ef, beta)
 
 
-def calc_sigmaEG_from_sigmaER(SigmaER, eng, ef, beta):
+def calc_SigmaEG_from_SigmaER(SigmaER, eng, ef, beta):
     """Calculates Σ_m(E)^> in lead m from Σ_m(E)^R
 
     Equation is

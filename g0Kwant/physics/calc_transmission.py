@@ -3,7 +3,7 @@
 import kwant
 import numpy as np
 from .g0 import GER01_general
-from .selfenergy import SER_general
+from .sigma import SigmaER_general
 import multiprocessing
 
 
@@ -74,8 +74,8 @@ def transmisson_QD_wire(engs, eps_d, gamma_dot, gamma_wire):
 
     eps_d : energy level of the QD
     """
-    Gl = -2*SER_general(engs, gamma_att=gamma_dot, gamma_lead=gamma_wire).imag
-    Gr = -2*SER_general(engs, gamma_att=gamma_wire, gamma_lead=gamma_wire).imag
+    Gl = -2*SigmaER_general(engs, gamma_att=gamma_dot, gamma_lead=gamma_wire).imag
+    Gr = -2*SigmaER_general(engs, gamma_att=gamma_wire, gamma_lead=gamma_wire).imag
     return Gl*Gr*np.abs(GER01_general(engs, eps_d, gamma_dot, gamma_wire))**2
 
 

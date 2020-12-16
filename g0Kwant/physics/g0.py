@@ -6,7 +6,7 @@
 import numpy as np
 import scipy as sc
 from .fermi import fermi
-from .selfenergy import *
+from .sigma import *
 
 ###############################################################################
 # # Energy domain
@@ -86,8 +86,8 @@ def GER00_general(e, ed, gamma_dot, gamma_wire=1):
         gamma_wire : hopping in the leads γ'
     """
     # # Result for ◎───● system:
-    # k1 = (e - SER_general(e, gamma_wire, gamma_wire))
-    # k2 = (e - ed - SER_general(e, gamma_dot, gamma_wire))
+    # k1 = (e - SigmaER_general(e, gamma_wire, gamma_wire))
+    # k2 = (e - ed - SigmaER_general(e, gamma_dot, gamma_wire))
     # return k1/(k1*k2 - gamma_dot**2)
     e = e/(2*np.abs(gamma_wire))
     ed = ed/(2*np.abs(gamma_wire))
@@ -109,7 +109,7 @@ def GEL00_general(e, ef1, ef2, beta, ed, gamma_dot, gamma_wire):
     where Σ(E)^< = ∑_m Σ_m(E)^<. """
 
     # ger = GER00_general(engs, ed, gamma_dot, gamma_wire)
-    # sel = 2*SEL_general(engs, ef, gamma_dot, gamma_wire)
+    # sel = 2*SigmaEL_general(engs, ef, gamma_dot, gamma_wire)
     # return ger*sel*ger.conj()
     f1 = fermi(e, ef1, beta)
     f2 = fermi(e, ef2, beta)
@@ -135,8 +135,8 @@ def GER01_general(e, ed, gamma_dot, gamma_wire):
         ed         : εd
         gamma_dot  : γ
         gamma_wire : γ' """
-    k1 = (e - SER_general(e, gamma_wire, gamma_wire))
-    k2 = (e - ed - SER_general(e, gamma_dot, gamma_wire))
+    k1 = (e - SigmaER_general(e, gamma_wire, gamma_wire))
+    k2 = (e - ed - SigmaER_general(e, gamma_dot, gamma_wire))
     return gamma_dot/(k1*k2 - gamma_dot**2)
 
 ###############################################################################
