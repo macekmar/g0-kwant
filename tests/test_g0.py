@@ -10,4 +10,4 @@ def test_consistency():
     assert np.allclose(GER01(E), GER01_general(E, eps_d, 1, 1))
     for ef in [-3, -0.7, 1.2]:
         assert np.allclose(GEL00(E, ef),
-                           GEL00_general(E, eps_d, 1, ef, ef, beta, q1))
+                           GEL00_general(E, eps_d, 1, ef, ef, beta, 1))
