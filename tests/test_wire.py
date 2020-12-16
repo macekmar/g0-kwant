@@ -4,6 +4,8 @@ from g0Kwant.geom.wire import wire_with_quantum_dot
 
 # In calc_g0_time.py we use hard-coded analytical formulas for dispertion
 # relation because we also need its derivative
+
+
 def test_dispersion():
     L = 1
     eps_d = 0.0
@@ -17,8 +19,7 @@ def test_dispersion():
     bands = kwant.physics.Bands(wire.leads[0])
     k = np.linspace(-np.pi+1e-5, np.pi-1e-5, 101)
     eng = np.array([bands(_k)[0] for _k in k])
-    eng_ana = eps_i + 2*np.abs(gamma_wire)*np.cos(k) # TODO: implement this as a function in calc_g0_time
+    # TODO: implement this as a function in calc_g0_time
+    eng_ana = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
 
     assert np.allclose(eng, eng_ana)
-    
-

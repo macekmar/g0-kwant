@@ -1,6 +1,5 @@
 # # Calculation of self energies (Σ, Sigma) for a general Kwant `FiniteSystem`
 
-import kwant
 import numpy as np
 
 from .fermi import fermi
@@ -35,18 +34,6 @@ def calc_SigmaEL(syst, lead, eng, ef, beta):
     return -(SigmaER - SigmaER.conj()) * fermi(eng, ef, beta)
 
 
-def calc_SigmaEG(syst, lead, eng, ef, beta):
-    """Calculates Σ_i(E)^> via calc_SigmaER.
-
-    Equation is
-        Σ_i(E)^> = -i Γ_i(E) (f_i(E) ‒ 1)
-    where
-        Γ_i(E) = i (Σ_i(E)^R - Σ_i(E)^A)
-    """
-    SigmaER = calc_SigmaER(syst, lead, eng)
-    return -(SigmaER - SigmaER.conj()) * (fermi(eng, ef, beta) - 1)
-
-
 def calc_SigmaEL_from_SigmaER(SigmaER, eng, ef, beta):
     """Calculates Σ_m(E)^< in lead m from Σ_m(E)^R
 
@@ -67,6 +54,18 @@ def calc_SigmaEL_from_SigmaER(SigmaER, eng, ef, beta):
         inverse temperature
     """
     return -(SigmaER - SigmaER.conj()) * fermi(eng, ef, beta)
+
+
+def calc_SigmaEG(syst, lead, eng, ef, beta):
+    """Calculates Σ_i(E)^> via calc_SigmaER.
+
+    Equation is
+        Σ_i(E)^> = -i Γ_i(E) (f_i(E) ‒ 1)
+    where
+        Γ_i(E) = i (Σ_i(E)^R - Σ_i(E)^A)
+    """
+    SigmaER = calc_SigmaER(syst, lead, eng)
+    return -(SigmaER - SigmaER.conj()) * (fermi(eng, ef, beta) - 1)
 
 
 def calc_SigmaEG_from_SigmaER(SigmaER, eng, ef, beta):

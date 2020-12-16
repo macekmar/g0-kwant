@@ -19,10 +19,9 @@
 
 import kwant
 import numpy as np
-import scipy as sc
 
 from .fermi import fermi
-from .calc_sigma import *
+from .calc_sigma import calc_SigmaER
 
 
 def calc_GER_inverse_from_SER(eng, ham, SERs):
@@ -45,7 +44,7 @@ def calc_GER_inverse_from_SER(eng, ham, SERs):
     mat = np.tensordot(eng, np.eye(*ham.shape, dtype=np.complex), axes=0)
     mat -= ham
     for (se, i, j) in SERs:
-        mat[:,i,j] -= se
+        mat[:, i, j] -= se
     return np.array([np.linalg.inv(m) for m in mat])
 
 
@@ -64,12 +63,13 @@ def calc_GER_inverse(syst, eng):
     """
     H_mat = syst.hamiltonian_submatrix()
     lead_pos = syst.lead_interfaces
-    N,M = H_mat.shape
+    N, M = H_mat.shape
     # Calculates GER for one energy
+
     def _calc_GER(e):
-        mat = e*np.eye(N,M) - H_mat
+        mat = e*np.eye(N, M) - H_mat
         for lead, pos in enumerate(lead_pos):
-            mat[pos[0],pos[0]] -= calc_SigmaER(syst, lead, e)
+            mat[pos[0], pos[0]] -= calc_SigmaER(syst, lead, e)
         return np.linalg.inv(mat)
 
     GER = []
@@ -96,9 +96,10 @@ def calc_GELG_inverse(GER, SEs):
         Σ_m(E)^R is a self energy for lead m attached in sites i, j
     """
     se_mat = np.zeros(GER.shape, dtype=np.complex)
-    for (SE,i,j) in SEs:
-        se_mat[:,i,j] = SE[:]
-    GEL = np.array([np.dot(GER[i], np.dot(se_mat[i], GER[i].conj().T)) for i in range(GER.shape[0])])
+    for (SE, i, j) in SEs:
+        se_mat[:, i, j] = SE[:]
+    GEL = np.array([np.dot(GER[i], np.dot(se_mat[i], GER[i].conj().T))
+                    for i in range(GER.shape[0])])
     return GEL
 
 
@@ -127,13 +128,14 @@ def calc_GELG(syst, eng, ef, beta):
         for lead in range(nb_leads):
             nb_channels = wf(lead).shape[0]
             for channel in range(nb_channels):
-                wf_val = wf(lead)[channel][:,np.newaxis] * np.ones((1,nb_sites))
-                GEL[iw,:,:] += (-1)**channel * 1j * fermi(w, ef[lead], beta) * wf_val * wf_val.T.conj()
-                GEG[iw,:,:] += (-1)**channel * 1j * (fermi(w, ef[lead], beta)-1) * wf_val * wf_val.T.conj()
+                wf_val = wf(lead)[channel][:, np.newaxis] * \
+                    np.ones((1, nb_sites))
+                GEL[iw, :, :] += (-1)**channel * 1j * fermi(w, ef[lead], beta) * wf_val * wf_val.T.conj()
+                GEG[iw, :, :] += (-1)**channel * 1j * (fermi(w, ef[lead], beta)-1) * wf_val * wf_val.T.conj()
     return GEL, GEG
 
 
-def calc_GELG_fun(fun, nb_leads, i, j, k, w, ef, beta):
+def calc_GELG_fun(fun, nb_leads, i, j, k, eng, ef, beta):
     """Calculates G(E)^<,> from the interpolation of the wave function.
 
     Integrand from equation 22, 1307.6419 but without the exponential (t=0).
@@ -141,13 +143,13 @@ def calc_GELG_fun(fun, nb_leads, i, j, k, w, ef, beta):
 
     Parameters
     ----------
-    fun :  
-        Interpolation of `kwant.wave_function(syst, energy=w)`
+    fun :
+        Interpolation of `kwant.wave_function(syst, energy=eng)`
 
-    k_vecs : 1D numpy array
+    k : 1D numpy array
 
-    omegas : 1D numpy array
-        omegas related to k_vecs by dispertion relation ε(k)
+    eng : 1D numpy array
+        eng related to k by dispertion relation ε(k)
     nb_leads : number of leads
 
     i and j : integers
@@ -156,11 +158,13 @@ def calc_GELG_fun(fun, nb_leads, i, j, k, w, ef, beta):
 
     beta : inverse temperature
     """
-    assert k.shape == w.shape
-    GEL = np.zeros((len(w)), dtype=np.complex)
-    GEG = np.zeros((len(w)), dtype=np.complex)
+    assert k.shape == eng.shape
+    GEL = np.zeros((len(eng)), dtype=np.complex)
+    GEG = np.zeros((len(eng)), dtype=np.complex)
     for lead in range(nb_leads):
         for channel in range(1):
-            GEL += (-1)**channel * 1j * fermi(w, ef[lead], beta) * fun(k, lead, channel, i) * fun(k, lead, channel, j).conj()
-            GEG += (-1)**channel * 1j * (fermi(w, ef[lead], beta) -1) * fun(k, lead, channel, i) * fun(k, lead, channel, j).conj()
+            GEL += (-1)**channel * 1j * fermi(eng, ef[lead], beta) * fun(
+                k, lead, channel, i) * fun(k, lead, channel, j).conj()
+            GEG += (-1)**channel * 1j * (fermi(eng, ef[lead], beta) - 1) * fun(
+                k, lead, channel, i) * fun(k, lead, channel, j).conj()
     return GEL, GEG

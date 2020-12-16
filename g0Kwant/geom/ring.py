@@ -107,8 +107,8 @@ def ring(L, QD, phase, gamma_beam, eps_i=0, gamma_wire=1):
         syst[lat(i, 0)] = eps_i
         syst[lat(i, 1)] = eps_i
     for i in range(0, L):
-        syst[lat(i,0), lat(i+1,0)] = gamma_wire
-        syst[lat(i,1), lat(i+1,1)] = gamma_wire
+        syst[lat(i, 0), lat(i+1, 0)] = gamma_wire
+        syst[lat(i, 1), lat(i+1, 1)] = gamma_wire
 
     # Add magnetic field
     if np.isscalar(phase):

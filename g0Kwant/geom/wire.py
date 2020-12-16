@@ -27,13 +27,13 @@ def wire_with_quantum_dot(L, eps_d, gamma, eps_i=0, gamma_wire=1):
     wire = kwant.Builder()
 
     # Extended leads
-    for i in range(-L,L+1):
+    for i in range(-L, L+1):
         wire[lat(i)] = eps_i
         wire[lat.neighbors()] = gamma_wire
     # Quantum dot
     wire[lat(0)] = eps_d
-    wire[lat(-1),lat(0)] = gamma
-    wire[lat(0),lat(1)] = gamma
+    wire[lat(-1), lat(0)] = gamma
+    wire[lat(0), lat(1)] = gamma
 
     # Leads
     sym_lead = kwant.TranslationalSymmetry((-1,))

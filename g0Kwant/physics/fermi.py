@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def fermi(eng, ef, beta):
     if beta == -1:
         return np.heaviside(ef-eng, 0.5)
@@ -9,4 +10,4 @@ def fermi(eng, ef, beta):
         e = eng-ef
         m = -(np.sign(e) - 1)/2
         p = -(np.sign(e) + 1)/2
-    return np.exp(p*beta*e)/(np.exp(p*beta*e) + np.exp(m*beta*e))
+    return np.exp(p*beta*e) / (np.exp(p*beta*e) + np.exp(m*beta*e))

@@ -4,7 +4,6 @@
 # 1307.6419 - Numerical simulations of time resolved quantum electronics, Gaury
 
 import numpy as np
-import scipy as sc
 from .fermi import fermi
 
 
@@ -14,11 +13,12 @@ def SigmaER(eng):
     Eq. (C.3) in 1307.6419.
     """
     e = eng/2.0
-    return np.piecewise(
-            np.array(e, dtype=np.complex), [e < -1.0, (e >= -1.0) & (e <= 1.0)],
-            [   lambda e: (e + np.sqrt(e**2 - 1)),
-                lambda e: (e - 1j*np.sqrt(1 - e**2)),
-                lambda e: (e - np.sqrt(e**2 - 1))   ])
+    return np.piecewise(np.array(e, dtype=np.complex),
+                        [e < -1.0, (e >= -1.0) & (e <= 1.0)], [
+                            lambda e: (e + np.sqrt(e**2 - 1)),
+                            lambda e: (e - 1j*np.sqrt(1 - e**2)),
+                            lambda e: (e - np.sqrt(e**2 - 1))
+    ])
 
 
 def SigmaEL(eng, ef):
@@ -28,10 +28,11 @@ def SigmaEL(eng, ef):
     """
     e = eng/2.0
     ef = ef/2.0
-    return np.piecewise(
-            np.array(e, dtype=np.complex), [(e >= -1.0) & (e <= ef)],
-            [   lambda e: (2j*(np.sqrt(1 - e**2))),
-                lambda e: 0   ])
+    return np.piecewise(np.array(e, dtype=np.complex),
+                        [(e >= -1.0) & (e <= ef)], [
+                            lambda e: (2j*(np.sqrt(1 - e**2))),
+                            lambda e: 0
+    ])
 
 
 def SigmaER_general(eng, gamma_att=1.0, gamma_lead=1.0):
@@ -56,11 +57,13 @@ def SigmaER_general(eng, gamma_att=1.0, gamma_lead=1.0):
     If we take only the quantum dot as part of the system, then γ" = γ.
     """
     e = eng/(2.0*np.abs(gamma_lead))
-    return np.abs(gamma_att)**2/np.abs(gamma_lead)*np.piecewise(
-            np.array(e, dtype=np.complex), [e < -1.0, (e >= -1.0) & (e <= 1.0)],
-            [   lambda e: (e + np.sqrt(e**2 - 1)),
-                lambda e: (e - 1j*np.sqrt(1 - e**2)),
-                lambda e: (e - np.sqrt(e**2 - 1))   ])
+    return np.abs(gamma_att)**2/np.abs(gamma_lead) * \
+            np.piecewise(np.array(e, dtype=np.complex),
+                        [e < -1.0, (e >= -1.0) & (e <= 1.0)], [
+                            lambda e: (e + np.sqrt(e**2 - 1)),
+                            lambda e: (e - 1j*np.sqrt(1 - e**2)),
+                            lambda e: (e - np.sqrt(e**2 - 1))
+            ])
 
 
 def SigmaEL_general(eng, ef, beta, gamma_att=1.0, gamma_lead=1.0):
@@ -72,7 +75,10 @@ def SigmaEL_general(eng, ef, beta, gamma_att=1.0, gamma_lead=1.0):
     """
     e = eng/(2.0*np.abs(gamma_lead))
     ef = ef/(2.0*np.abs(gamma_lead))
-    return np.abs(gamma_att)**2/np.abs(gamma_lead)*fermi(e, ef, beta)*np.piecewise(
-            np.array(e, dtype=np.complex), [(e >= -1.0) & (e <= 1.0)],
-            [   lambda e: (2j*(np.sqrt(1 - e**2))),
-                lambda e: 0   ])
+    return np.abs(gamma_att)**2/np.abs(gamma_lead) * fermi(e, ef, beta) * \
+            np.piecewise(
+            np.array(e, dtype=np.complex),
+            [(e >= -1.0) & (e <= 1.0)], [
+                lambda e: (2j*(np.sqrt(1 - e**2))),
+                lambda e: 0
+            ])
