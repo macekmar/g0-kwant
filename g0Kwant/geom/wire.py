@@ -1,7 +1,7 @@
 import kwant
 
 
-def wire_with_quantum_dot(L, eps_d, gamma_dot, eps_i=0, gamma_wire=1):
+def wire_with_quantum_dot(L, eps_d, gamma, eps_i=0, gamma_wire=1):
     """Creates a 1D wire with a quantum dot (QD) at position 0.
 
     Example for L = 2:
@@ -14,7 +14,7 @@ def wire_with_quantum_dot(L, eps_d, gamma_dot, eps_i=0, gamma_wire=1):
 
     eps_d : potential on the quantum dot (◎)
 
-    gamma_dot : hopping between the quantum dot an the leads (●──◎)
+    gamma : hopping between the quantum dot an the leads (●──◎)
 
     eps_i : on site potential in the leads (○ and ┄┄)
 
@@ -32,8 +32,8 @@ def wire_with_quantum_dot(L, eps_d, gamma_dot, eps_i=0, gamma_wire=1):
         wire[lat.neighbors()] = gamma_wire
     # Quantum dot
     wire[lat(0)] = eps_d
-    wire[lat(-1),lat(0)] = gamma_dot
-    wire[lat(0),lat(1)] = gamma_dot
+    wire[lat(-1),lat(0)] = gamma
+    wire[lat(0),lat(1)] = gamma
 
     # Leads
     sym_lead = kwant.TranslationalSymmetry((-1,))

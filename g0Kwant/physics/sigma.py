@@ -8,12 +8,12 @@ import scipy as sc
 from .fermi import fermi
 
 
-def SigmaER(e):
+def SigmaER(eng):
     """Returns Σ(E)^R for a perfect lead with γ = 1.
 
     Eq. (C.3) in 1307.6419.
     """
-    e = e/2.0
+    e = eng/2.0
     return np.piecewise(
             np.array(e, dtype=np.complex), [e < -1.0, (e >= -1.0) & (e <= 1.0)],
             [   lambda e: (e + np.sqrt(e**2 - 1)),
@@ -21,12 +21,12 @@ def SigmaER(e):
                 lambda e: (e - np.sqrt(e**2 - 1))   ])
 
 
-def SigmaEL(e, ef):
+def SigmaEL(eng, ef):
     """Returns Σ(E)^< for a perfect lead with γ = 1.
 
     Eq. (C.4) in 1307.6419.
     """
-    e = e/2.0
+    e = eng/2.0
     ef = ef/2.0
     return np.piecewise(
             np.array(e, dtype=np.complex), [(e >= -1.0) & (e <= ef)],
@@ -34,7 +34,7 @@ def SigmaEL(e, ef):
                 lambda e: 0   ])
 
 
-def SigmaER_general(e, gamma_att=1.0, gamma_lead=1.0):
+def SigmaER_general(eng, gamma_att=1.0, gamma_lead=1.0):
     """Returns Σ(E)^R for a perfect lead with general hoppings.
 
     The equation is:
@@ -55,7 +55,7 @@ def SigmaER_general(e, gamma_att=1.0, gamma_lead=1.0):
     So, Σ(E)^R is for the attachment between ○───● and γ" = γ'.
     If we take only the quantum dot as part of the system, then γ" = γ.
     """
-    e = e/(2.0*np.abs(gamma_lead))
+    e = eng/(2.0*np.abs(gamma_lead))
     return np.abs(gamma_att)**2/np.abs(gamma_lead)*np.piecewise(
             np.array(e, dtype=np.complex), [e < -1.0, (e >= -1.0) & (e <= 1.0)],
             [   lambda e: (e + np.sqrt(e**2 - 1)),
@@ -63,14 +63,14 @@ def SigmaER_general(e, gamma_att=1.0, gamma_lead=1.0):
                 lambda e: (e - np.sqrt(e**2 - 1))   ])
 
 
-def SigmaEL_general(e, ef, beta, gamma_att=1.0, gamma_lead=1.0):
+def SigmaEL_general(eng, ef, beta, gamma_att=1.0, gamma_lead=1.0):
     """Returns Σ(E)^< for a perfect lead with general hoppings.
 
     It is calculated from Eq. (19) and (20) in 1307.6419:
 
         Σ(E)^< = -f(E)[ Σ(E)^R - Σ(E)^A ],   Σ(E)^A = [Σ(E)^R]^†
     """
-    e = e/(2.0*np.abs(gamma_lead))
+    e = eng/(2.0*np.abs(gamma_lead))
     ef = ef/(2.0*np.abs(gamma_lead))
     return np.abs(gamma_att)**2/np.abs(gamma_lead)*fermi(e, ef, beta)*np.piecewise(
             np.array(e, dtype=np.complex), [(e >= -1.0) & (e <= 1.0)],

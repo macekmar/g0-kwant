@@ -7,23 +7,23 @@ from .sigma import SigmaER_general
 import multiprocessing
 
 
-def _calc_trans(syst, e):
+def _calc_trans(syst, eng):
     """Calculates transmission matrix for a system `syst` in energy `e`."""
-    smatrix = kwant.smatrix(syst, e)
+    smatrix = kwant.smatrix(syst, eng)
     N = len(smatrix.lead_info)
     return [[smatrix.transmission(j,i) for i in range(N)] for j in range(N)]
 
 
-def calc_transmission(syst, engs):
+def calc_transmission(syst, eng):
     """Calculates transmission matrix for a system `syst` in energies `engs`."""
     trans = []
 
     scalar = False
-    if np.isscalar(engs):
+    if np.isscalar(eng):
         scalar = True
-        engs = [engs]
+        eng = [eng]
 
-    for e in engs:
+    for e in eng:
         trans.append(_calc_trans(syst, e))
 
     if scalar:
@@ -32,18 +32,18 @@ def calc_transmission(syst, engs):
         return np.array(trans)
 
 
-def calc_transmission_parallel(syst, engs, ncore=4):
+def calc_transmission_parallel(syst, eng, ncore=4):
     """Calculates transmission matrix for a system `syst` in energies `engs`.
 
     Parallel version using multiprocessing. Useful in notebooks.
     """
     scalar = False
-    if np.isscalar(engs):
+    if np.isscalar(eng):
         scalar = True
-        engs = [engs]
+        eng = [eng]
 
     p = multiprocessing.Pool(ncore)
-    trans = p.starmap(_calc_trans, zip(len(engs)*[syst], engs))
+    trans = p.starmap(_calc_trans, zip(len(eng)*[syst], eng))
     p.close()
     if scalar:
         return trans[0]
@@ -51,7 +51,7 @@ def calc_transmission_parallel(syst, engs, ncore=4):
         return np.array(trans)
 
 
-def transmisson_QD_wire(engs, eps_d, gamma_dot, gamma_wire):
+def transmission_QD_wire(eng, eps_d, gamma, gamma_wire):
     """Calculates transmission for a QD in a 1D wire.
 
     Equation
@@ -68,18 +68,18 @@ def transmisson_QD_wire(engs, eps_d, gamma_dot, gamma_wire):
 
     Paramters
     ---------
-    gamma_dot : hopping between a QD and the leads
+    gamma : hopping between a QD and the leads
 
     gamma_wire : hopping in the leads
 
     eps_d : energy level of the QD
     """
-    Gl = -2*SigmaER_general(engs, gamma_att=gamma_dot, gamma_lead=gamma_wire).imag
-    Gr = -2*SigmaER_general(engs, gamma_att=gamma_wire, gamma_lead=gamma_wire).imag
-    return Gl*Gr*np.abs(GER01_general(engs, eps_d, gamma_dot, gamma_wire))**2
+    Gl = -2*SigmaER_general(eng, gamma_att=gamma, gamma_lead=gamma_wire).imag
+    Gr = -2*SigmaER_general(eng, gamma_att=gamma_wire, gamma_lead=gamma_wire).imag
+    return Gl*Gr*np.abs(GER01_general(eng, eps_d, gamma, gamma_wire))**2
 
 
-def transmission_QD_wire_peak_pos(eps_d, gamma_dot, gamma_wire):
+def transmission_QD_wire_peak_pos(eps_d, gamma, gamma_wire):
     """Returns the energies of the transmission T_12 peak and FWHM.
 
     Calculated from the analytical formula for `transmission_QD_wire`:
@@ -90,7 +90,7 @@ def transmission_QD_wire_peak_pos(eps_d, gamma_dot, gamma_wire):
                 e  = E/(2·γ_wire)
                 e₀ = [k²/(k² - 1)]·εd / (2·γ_wire)
     """
-    k = gamma_wire/gamma_dot
+    k = gamma_wire/gamma
 
     # Usually this is the maximum position:
     E0 = k**2/(k**2-1)*eps_d
