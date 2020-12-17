@@ -2,7 +2,7 @@ import numpy as np
 from g0Kwant.physics.g0 import *
 
 
-def test_consistency():
+def test_g0_analytical_formula_consistency():
     E = np.linspace(-1.99, 1.99, 201)
     eps_d = 0.0
     beta = -1

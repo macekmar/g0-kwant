@@ -54,10 +54,23 @@
 # However, we are missing the oscillatory part exp(iEt). It could be useful to
 # control the interpolation of the wave function.
 #
-# Example:
+# Example with parallelization:
+#   import sys
+#   import uuid
+#
+#   def globalize(func):
+#       def result(*args, **kwargs):
+#           return func(*args, **kwargs)
+#       result.__name__ = result.__qualname__ = uuid.uuid4().hex
+#       setattr(sys.modules[result.__module__], result.__name__, result)
+#       return result
+#
+#   @globalize
 #   def GtL(k):
-#       return integrand_GtL(syst, k, i, j, times, [ef1, ef2], beta, 0, gw)
+#       return integrand_GtL(syst, k, times, i, j, [ef1, ef2], beta, 0, gw)
 #   res, err = calc_Gt_integral(GtL, 0, np.pi, quad_vec_kwargs={"workers":1})
+#
+# Without globalize it complains it cannot pickle
 
 import kwant
 import numpy as np
@@ -152,7 +165,7 @@ def integrand_GtR(syst, k, t, i, j, eps_i=0, gamma_wire=1):
     return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
-def integrand_Gt_control(syst, k, i, eps_i=0, gamma_wire=1):
+def integrand_Gt_control(syst, k, i, j, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (26) in 1307.6419 for |G(t)|².
 
     Parameters
@@ -171,7 +184,7 @@ def integrand_Gt_control(syst, k, i, eps_i=0, gamma_wire=1):
     for lead in range(len(syst.leads)):
         for channel in range(1):
             val += 1/(2*np.pi) * \
-                    wf(lead)[channel][i] * wf(lead)[channel][i].conj()
+                    wf(lead)[channel][i] * wf(lead)[channel][j].conj()
     return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
