@@ -17,6 +17,10 @@
 # Integrals diverge for E close to the band limits. It is better to integrate
 # in the k-domain. Dispertion is E(k) = 2|γ|cos(k), where γ is hopping in the
 # leads.
+# NOTE: E = 0 corresponds to k = π and E = 2|γ| to k = 0, in k domain we
+#       integrate from π to 0!
+# NOTE: functions `..._intp` and `..._intp_mat` only work for systems with two
+#       leads!
 #
 # We need G(t) evaluated in many points. Instead of integrating (1) for each t
 # separately, we integrate a matrix function, where the first axis is the
@@ -93,7 +97,7 @@ def integrand_GtL(syst, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
     # Test if we are between fermi levels, else result is 0
     if np.any(np.array([fermi(e, ef, beta) for ef in ef]) > 1e-14):
         wf = kwant.wave_function(syst, energy=e)
-        for lead in range(2):
+        for lead in range(len(syst.leads)):
             for channel in range(1):
                 val += (-1)**channel * 1j/(2*np.pi) * \
                         fermi(e, ef[lead], beta) * \
@@ -126,7 +130,7 @@ def integrand_GtG(syst, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
     # Test if we are between fermi levels, else result is 0
     if np.any(np.array([(fermi(e, ef, beta)-1) for ef in ef]) < -1e-14):
         wf = kwant.wave_function(syst, energy=e)
-        for lead in range(2):
+        for lead in range(len(syst.leads)):
             for channel in range(1):
                 val += (-1)**channel * 1j/(2*np.pi) * \
                         (fermi(e, ef[lead], beta)-1) * \
@@ -139,7 +143,7 @@ def integrand_GtR(syst, k, t, i, j, eps_i=0, gamma_wire=1):
     e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
     wf = kwant.wave_function(syst, energy=e)
-    for lead in range(2):
+    for lead in range(len(syst.leads)):
         for channel in range(1):
             val += 1/(2*np.pi) * \
                     wf(lead)[channel][i] * wf(lead)[channel][j].conj() * \
@@ -164,7 +168,7 @@ def integrand_Gt_control(syst, k, i, eps_i=0, gamma_wire=1):
     e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
     val = 0
     wf = kwant.wave_function(syst, energy=e)
-    for lead in range(2):
+    for lead in range(len(syst.leads)):
         for channel in range(1):
             val += 1/(2*np.pi) * \
                     wf(lead)[channel][i] * wf(lead)[channel][i].conj()
