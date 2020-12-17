@@ -1,5 +1,6 @@
 from g0Kwant.geom.wire import *
 from g0Kwant.geom.ring import *
+from g0Kwant.geom.beam_splitter import *
 
 from g0Kwant.physics.fermi import *
 from g0Kwant.physics.calc_g0_time import *
