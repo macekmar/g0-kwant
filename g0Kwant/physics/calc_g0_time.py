@@ -58,6 +58,7 @@
 #       nr_int uses OMP parallelization and should be avoided (use nr_int = 1).
 #       This can be avoided if we set partition manually and run the job with
 #       combined parallelization.
+#       The code only checks nr_idx·nr_k <= world.size!!!
 #
 # We can check the integration using the Eq. (26) in 1307.6419
 #             ⌠ dE                        †
@@ -104,7 +105,7 @@ def _check_partition(world, partition, sites):
         nr_int = world.size//(nr_idx*nr_k)
     else:
         nr_idx, nr_k, nr_int = partition
-    assert nr_idx*nr_k*nr_int <= world.size, \
+    assert nr_idx*nr_k <= world.size, \
         "Number of workers: %d*%d*%d larger than number of processes: %d." % (
             nr_idx, nr_k, nr_int, world.size)
     if world.rank == 0:
