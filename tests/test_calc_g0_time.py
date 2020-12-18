@@ -49,13 +49,41 @@ def test_g0_time_consistency():
     GtL01_ana = GtL01(times)
 
     # Using integration
-    GtR00_int, err = calc_Gt_integral(int_GtR00, np.pi, 0)
-    GtL00_int, err = calc_Gt_integral(int_GtL00, np.pi, 0)
-    GtL01_int, err = calc_Gt_integral(int_GtL01, np.pi, 0)
+    GtR00_int, err = integrate(int_GtR00, np.pi, 0)
+    GtL00_int, err = integrate(int_GtL00, np.pi, 0)
+    GtL01_int, err = integrate(int_GtL01, np.pi, 0)
 
     assert np.allclose(GtR00_int, GtR00_ana)
     assert np.allclose(GtL00_int, GtL00_ana)
     assert np.allclose(GtL01_int, GtL01_ana)
+
+
+def test_system_g0_time_consistency():
+    L = 3
+    gamma = 1.0
+    gamma_wire = 1.0
+    eps_d = 0.0
+    ef_left = 0
+    ef_right = 0
+    beta = -1
+
+    wire = wire_with_quantum_dot(L, eps_d, gamma, eps_i=0, gamma_wire=gamma_wire)
+    wire = wire.finalized()
+
+    times = np.linspace(-5, 5, 101)
+
+    # Analytical results
+    GtR00_ana = GtR00(times)
+    GtL00_ana = GtL00(times)
+    GtL01_ana = GtL01(times)
+
+    # Using integration
+    sites = [L, L+1]
+    ef = [ef_left, ef_right]
+    GtL, GtG = calc_GtLG_integrals(wire, times, sites, ef, beta, 0, gamma_wire)
+
+    assert np.allclose(GtL[:, 0, 0], GtL00_ana)
+    assert np.allclose(GtL[:, 0, 1], GtL01_ana)
 
 
 def test_normalization_condition():
@@ -75,7 +103,7 @@ def test_normalization_condition():
     @globalize
     def int_GtControl_00(k):
         return integrand_Gt_control(wire, k, L, L, 0, gamma_wire)
-    
+
     @globalize
     def int_GtControl_01(k):
         return integrand_Gt_control(wire, k, L, L+1, 0, gamma_wire)
@@ -84,9 +112,9 @@ def test_normalization_condition():
     def int_GtControl_LL(k):
         return integrand_Gt_control(wire, k, 2*L, 2*L, 0, gamma_wire)
 
-    C00, err = calc_Gt_integral(int_GtControl_00, np.pi, 0)
-    C01, err = calc_Gt_integral(int_GtControl_01, np.pi, 0)
-    CLL, err = calc_Gt_integral(int_GtControl_LL, np.pi, 0)
+    C00, err = integrate(int_GtControl_00, np.pi, 0)
+    C01, err = integrate(int_GtControl_01, np.pi, 0)
+    CLL, err = integrate(int_GtControl_LL, np.pi, 0)
 
     assert np.allclose(C00, 1)
     assert np.allclose(C01, 0)

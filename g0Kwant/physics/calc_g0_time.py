@@ -43,9 +43,21 @@
 #
 # This observations gives us the order of parallelization:
 #   - split integration of Gᵢⱼ(t)< and Gᵢⱼ(t)<
-#   - different i,j indices
-#   - split the integration domain a few times (2‒6)
-#   - `scipy.integrate.quad_vec` parallelization
+#   - different i,j indices: `nr_idx`
+#   - split the integration domain a few times (2‒6): `nr_k`
+#   - `scipy.integrate.quad_vec` parallelization: `nr_int`
+# NOTE: We do M*(M+1)/2 calculations of different Gᵢⱼ if M is the number of all
+#       i or j.
+# NOTE: If M*(M+1)/2 is not a nice number compared to world.size it is perhaps
+#       better to give partition manually and calculate on
+#                   nr_idx·nr_k·nr_int < world.size
+#       cores than to have
+#                   nr_idx·nr_k·nr_int = world.size
+#       and nr_idx small.
+# NOTE, TODO: when splitting, we are not aware of the processor topology,
+#       nr_int uses OMP parallelization and should be avoided (use nr_int = 1).
+#       This can be avoided if we set partition manually and run the job with
+#       combined parallelization.
 #
 # We can check the integration using the Eq. (26) in 1307.6419
 #             ⌠ dE                        †
@@ -54,24 +66,10 @@
 # However, we are missing the oscillatory part exp(iEt). It could be useful to
 # control the interpolation of the wave function.
 #
-# Example with parallelization:
-#   import sys
-#   import uuid
-#
-#   def globalize(func):
-#       def result(*args, **kwargs):
-#           return func(*args, **kwargs)
-#       result.__name__ = result.__qualname__ = uuid.uuid4().hex
-#       setattr(sys.modules[result.__module__], result.__name__, result)
-#       return result
-#
-#   @globalize
-#   def GtL(k):
-#       return integrand_GtL(syst, k, times, i, j, [ef1, ef2], beta, 0, gw)
-#   res, err = calc_Gt_integral(GtL, 0, np.pi, quad_vec_kwargs={"workers":1})
-#
-# Without globalize it complains it cannot pickle
 
+from mpi4py import MPI
+import sys
+import uuid
 import kwant
 import numpy as np
 import scipy as sc
@@ -79,14 +77,118 @@ import scipy as sc
 from .fermi import fermi
 
 
-def calc_Gt_integral(integrand, k_min, k_max, quad_vec_kwargs={"workers": 4, "full_output": False}):
+##############################################################################
+# # INTEGRATION
+
+# This is needed for parallelization of quad_vec
+# it can only pickled (needed for parallelization) functions which are global
+# this makes them global
+def globalize(func):
+    def result(*args, **kwargs):
+        return func(*args, **kwargs)
+    result.__name__ = result.__qualname__ = uuid.uuid4().hex
+    setattr(sys.modules[result.__module__], result.__name__, result)
+    return result
+
+
+def _check_partition(world, partition, sites):
+    if world is None:
+        world = MPI.COMM_WORLD
+    if partition is None:
+        # We calculate only one triangle of the matrix
+        # but we calculate G< and G>
+        nr_idx_calc = 2*(len(sites)*(len(sites)+1)//2)
+        nr_idx = np.gcd(nr_idx_calc, world.size)
+        # k is divided at most four times
+        nr_k = 4 - np.argmin([world.size//nr_idx % div for div in [4, 3, 2, 1]])
+        nr_int = world.size//(nr_idx*nr_k)
+    else:
+        nr_idx, nr_k, nr_int = partition
+    assert nr_idx*nr_k*nr_int <= world.size, \
+        "Number of workers: %d*%d*%d larger than number of processes: %d." % (
+            nr_idx, nr_k, nr_int, world.size)
+    if world.rank == 0:
+        print("Combination: World size: % 2d Nr idx % 2d Nr k: % 2d Nr int: % 2d" % (
+            world.size, nr_idx, nr_k, nr_int))
+    return world, (nr_idx, nr_k, nr_int)
+
+
+def calc_GtLG_integrals(syst, times, sites, ef, beta, eps_i=0, gamma_wire=1,
+                        world=None, partition=None):
+    """Calculates G_ij(t)< and G_ij(t)> for given times and sites."""
+    world, (nr_idx, nr_k, nr_int) = _check_partition(world, partition, sites)
+
+    # Prepare stuff
+    idx_j, idx_i = np.meshgrid(sites, sites)
+    # Create empty arrays
+    GwL = np.zeros((times.shape[0], len(sites), len(sites)), dtype=np.complex)
+    GwG = np.zeros((times.shape[0], len(sites), len(sites)), dtype=np.complex)
+
+    # Calculate integration limits
+    # 0, ..., nr_idx-1 calculate between 0 and np.pi/nr_k
+    # nr_idx, ..., 2*nr_idx calculate between np.pi/nr_k and 2np.pi/nr_k, ...
+    # where 0 calculates G<[0,0], 1 calculates G>[0,0], ...
+    i_idx = world.rank % nr_idx
+    i_k = (world.rank // nr_idx) % nr_k
+
+    a = (i_k + 1) / nr_k * np.pi
+    b = i_k / nr_k * np.pi
+
+    # Integrate
+    itr = 0
+    cache_size = int(2*1024**3)  # 2 GB?
+    for i in range(len(sites)):
+        for j in range(i, len(sites)):  # use the fact G^<(t) = G^<(-t)^†
+            if world.rank >= nr_idx*nr_k:  # leave free cores for integration
+                continue
+            if itr == i_idx:
+                # print("%d calculates GtL %d %d from %4.3f to %4.3f" % (world.rank, i, j, a/np.pi, b/np.pi))
+                @globalize
+                def fun_GtL(k):
+                    return integrand_GtL(syst, k, times, idx_i[i,j], idx_j[i,j], ef, beta, eps_i, gamma_wire)
+                res, err = integrate(fun_GtL, a, b, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int})
+                GwL[:, i, j] += res
+            itr += 1
+            itr = itr % nr_idx
+            if itr == i_idx:
+                # print("%d calculates GtG %d %d from %4.3f to %4.3f" % (world.rank, i, j, a/np.pi, b/np.pi))
+                @globalize
+                def fun_GtG(k):
+                    return integrand_GtG(syst, k, times, idx_i[i,j], idx_j[i,j], ef, beta, eps_i, gamma_wire)
+                res, err = integrate(fun_GtG, a, b, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int})
+                GwG[:, i, j] += res
+
+            itr += 1
+            itr = itr % nr_idx
+
+    world.barrier()
+
+    # Reduce results from different processes
+    GwL_red = np.zeros((times.shape[0], len(sites), len(sites)), dtype=np.complex)
+    GwG_red = np.zeros((times.shape[0], len(sites), len(sites)), dtype=np.complex)
+    world.Allreduce(GwL, GwL_red)
+    world.Allreduce(GwG, GwG_red)
+
+    # use the fact G^<(t) = G^<(-t)^†
+    # moveaxis: transpose on the last two axes
+    GwL_red -= (np.moveaxis(np.triu(GwL_red, 1), 1, -1).conj())[::-1]
+    GwG_red -= (np.moveaxis(np.triu(GwG_red, 1), 1, -1).conj())[::-1]
+
+    return GwL_red, GwG_red
+
+
+def integrate(integrand, k_min, k_max, quad_vec_kwargs={"workers": 4, "full_output": False}):
     """Integrates integrand (some g(t)) on the interval `[k_min, k_max]`."""
     integral = sc.integrate.quad_vec(integrand, a=k_min, b=k_max, **quad_vec_kwargs)
     Gt = integral[0][..., 0] + 1j*integral[0][..., 1]
     return Gt, integral[1:]
 
 
-def integrand_GtL(syst, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
+##############################################################################
+# # INTEGRANDS
+
+
+def integrand_GtL(syst, k,  t, i, j, ef, beta, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (22) in 1307.6419 for G(t)<.
 
     Parameters
@@ -196,7 +298,8 @@ def calc_GtG_from_GtLR(t, GtL, GtR):
 
 
 ###############################################################################
-# Deprecated
+# # DEPRECATED
+
 ###############################################################################
 # # Gt^<
 
