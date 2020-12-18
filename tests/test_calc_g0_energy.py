@@ -1,6 +1,7 @@
 import numpy as np
 from g0Kwant.geom.wire import *
 from g0Kwant.physics.g0 import *
+from g0Kwant.physics.calc_g0_interpolator import WaveFunInterpolation
 from g0Kwant.physics.calc_g0_energy import *
 from g0Kwant.physics.calc_sigma import *
 from g0Kwant.physics.calc_g0_time import *
@@ -17,8 +18,7 @@ def test_g0_energy_consistency():
     ef_right = bias/2
     beta = 100.0
 
-    wire = wire_with_quantum_dot(
-        L, eps_d, gamma, eps_i=0, gamma_wire=gamma_wire)
+    wire = wire_with_quantum_dot(L, eps_d, gamma, eps_i=0, gamma_wire=gamma_wire)
     wire = wire.finalized()
 
     eng = np.linspace(-2*gamma_wire + 1e-5, 2*gamma_wire - 1e-5, 101)
@@ -75,8 +75,7 @@ def test_g0_time_integrand_to_energy():
     ef_right = bias/2
     beta = 100.0
 
-    wire = wire_with_quantum_dot(
-        L, eps_d, gamma, eps_i=0, gamma_wire=gamma_wire)
+    wire = wire_with_quantum_dot(L, eps_d, gamma, eps_i=0, gamma_wire=gamma_wire)
     wire = wire.finalized()
 
     k = np.linspace(1e-5, np.pi - 1e-5, 101)
@@ -91,3 +90,31 @@ def test_g0_time_integrand_to_energy():
     GEG_int = (GEG_int_[:, 0, 0] + 1j*GEG_int_[:, 0, 1])*2*np.pi/dedk
     assert np.allclose(GEL_int, GEL_wf[:, L, L + 2])
     assert np.allclose(GEG_int, GEG_wf[:, L, L + 2])
+
+
+def test_g0_energy_interpolation_consistency():
+    L = 3
+    Gamma = 0.7
+    gamma = np.sqrt(Gamma/2.0)
+    gamma_wire = 1.5
+    eps_d = 0.3
+    bias = 0.2
+    ef_left = -bias/2
+    ef_right = bias/2
+    beta = 100.0
+
+    wire = wire_with_quantum_dot(L, eps_d, gamma, eps_i=0, gamma_wire=gamma_wire)
+    wire = wire.finalized()
+
+    k = np.linspace(1e-5, np.pi-1e-5, 101)
+    eng = 2*gamma_wire*np.cos(k)
+
+    # Analytical calculation
+    GEL00_ana = GEL00_general(eng, eps_d, gamma, ef_left, ef_right, beta, gamma_wire)
+
+    # Using wave function with interpolation
+    WF = WaveFunInterpolation(wire, 2000, 1e-5, 0, gamma_wire)
+    WF.get_data()
+    WF.get_interpolators()
+    GEL00_wf, GEG00_wf = calc_GELG_fun(WF, k, eng, 2, L, L, [ef_left, ef_right], beta)
+    assert np.allclose(GEL00_ana, GEL00_wf)
