@@ -1,5 +1,6 @@
 import kwant
 import numpy as np
+import matplotlib.pyplot as plt
 from .beam_splitter import _beam_splitter
 
 
@@ -80,3 +81,50 @@ def ring(L, QD, phase, gamma_beam, eps_i=0, gamma_wire=1):
         syst.attach_lead(lead.reversed())
 
     return syst, lat
+
+
+def plot_ring(syst, eps_d):
+    """Plots ring with some additional data."""
+    def site_color(site):
+        def cmap(e):
+            # color limits in +- range
+            r = 2*np.abs(eps_d)
+            return plt.get_cmap("RdYlBu")((e + r) / (2*r))
+        return cmap(syst.hamiltonian(site, site).real)
+
+    def hop_lw(s1, s2):
+        return min(0.2, np.abs(syst.hamiltonian(s1, s2))/3)
+
+    def hop_color(s1, s2):
+        def cmap(angle):
+            # So that there is no jump pi -> -pi for np.angle(-1-+0.01j)
+            # TODO: % 2 and then /2???
+            angle = (2 + angle/np.pi) % 2
+            return plt.get_cmap("RdBu_r")(angle/2)
+        return cmap(np.angle(syst.hamiltonian(s1, s2)))
+
+    fig, ax = plt.subplots(figsize=(13, 8))
+    kwant.plot(syst,
+               site_symbol="o", site_color=site_color, site_edgecolor="k", site_lw=0.05, site_size=0.35,
+               hop_lw=hop_lw, hop_color=hop_color,
+               ax=ax)
+    ax.set_aspect("equal")
+
+    # Print site numbers
+    keys = list(syst.id_by_site.keys())
+    for site in keys:
+        x, y = site.pos
+        ax.text(x-0.045, y-0.02, "% 2d" %
+                syst.id_by_site[site], horizontalalignment='center', verticalalignment='center', fontsize=9)
+
+    # Print leads' numbers
+    for i, leads in enumerate(syst.lead_interfaces):
+        x, y = syst.sites[leads[0]].pos  # Assuming 1D wires
+        if x < 0:
+            ax.text(x - 3, y, "T=%d" % i, fontsize=12,
+                    horizontalalignment='right', verticalalignment='center')
+        else:
+            ax.text(x + 3, y, "T=%d" % i, fontsize=12,
+                    horizontalalignment='left', verticalalignment='center')
+
+    return fig, ax
