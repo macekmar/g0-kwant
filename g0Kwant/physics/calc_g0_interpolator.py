@@ -2,6 +2,7 @@ import scipy as sc
 import numpy as np
 import kwant
 import adaptive
+from concurrent.futures import ProcessPoolExecutor
 
 
 class WaveFunInterpolation():
@@ -47,13 +48,14 @@ class WaveFunInterpolation():
         res = np.array([[wf(i).real, wf(i).imag] for i in range(self.nb_leads)])
         return np.moveaxis(res, 1, -1)  # Re, Im should be last axis
 
-    def get_data(self):
+    def get_data(self, world_size=1):
         """Gathers data using adaptive package.
 
         Note: adaptive can use mpi but I have not managed to use it
         successfully. """
         learner = adaptive.Learner1D(self.wf, bounds=[self.eps, np.pi - self.eps])
-        runner = adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > self.nb_pts)
+        executor = ProcessPoolExecutor(max_workers=world_size)
+        runner = adaptive.BlockingRunner(learner, executor=executor, goal=lambda l: l.npoints > self.nb_pts)
         # extract data
         data = learner.data
         k_vec = np.fromiter(data.keys(), dtype=np.float)
