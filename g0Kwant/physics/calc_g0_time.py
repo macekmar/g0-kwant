@@ -115,7 +115,7 @@ def _check_partition(world, partition, sites):
 
 
 def calc_GtLG_integrals(syst, times, sites, ef, beta, eps_i=0, gamma_wire=1,
-                        world=None, partition=None):
+                        world=None, partition=None, epsrel=1e-8):
     """Calculates G_ij(t)< and G_ij(t)> for given times and sites."""
     world, (nr_idx, nr_k, nr_int) = _check_partition(world, partition, sites)
 
@@ -138,6 +138,8 @@ def calc_GtLG_integrals(syst, times, sites, ef, beta, eps_i=0, gamma_wire=1,
     # Integrate
     itr = 0
     cache_size = int(2*1024**3)  # 2 GB?
+    pts = np.arccos(np.array(ef)/2)
+    pts = np.unique(pts)
     for i in range(len(sites)):
         for j in range(i, len(sites)):  # use the fact G^<(t) = G^<(-t)^†
             if world.rank >= nr_idx*nr_k:  # leave free cores for integration
@@ -147,8 +149,8 @@ def calc_GtLG_integrals(syst, times, sites, ef, beta, eps_i=0, gamma_wire=1,
                 @globalize
                 def fun_GtL(k):
                     return integrand_GtL(syst, k, times, idx_i[i,j], idx_j[i,j], ef, beta, eps_i, gamma_wire)
-                res, err = integrate(fun_GtL, a, b, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int})
-                GwL[:, i, j] += res
+                res, _ = integrate(fun_GtL, b, a, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int, "points": pts, "epsrel": epsrel })
+                GwL[:, i, j] -= res
             itr += 1
             itr = itr % nr_idx
             if itr == i_idx:
@@ -156,8 +158,8 @@ def calc_GtLG_integrals(syst, times, sites, ef, beta, eps_i=0, gamma_wire=1,
                 @globalize
                 def fun_GtG(k):
                     return integrand_GtG(syst, k, times, idx_i[i,j], idx_j[i,j], ef, beta, eps_i, gamma_wire)
-                res, err = integrate(fun_GtG, a, b, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int})
-                GwG[:, i, j] += res
+                res, _ = integrate(fun_GtG, b, a, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int, "points": pts, "epsrel": epsrel })
+                GwG[:, i, j] -= res
 
             itr += 1
             itr = itr % nr_idx
