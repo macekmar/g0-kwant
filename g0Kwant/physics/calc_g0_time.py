@@ -210,7 +210,7 @@ def integrand_GtL(syst, k,  t, i, j, ef, beta, eps_i=0, gamma_wire=1):
 
         eps_i and gamma_wire : parameters for the dispertion relation
     """
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
     # Test if we are between fermi levels, else result is 0
     if np.any(np.array([fermi(e, ef, beta) for ef in ef]) > 1e-14):
@@ -221,7 +221,7 @@ def integrand_GtL(syst, k,  t, i, j, ef, beta, eps_i=0, gamma_wire=1):
                         fermi(e, ef[lead], beta) * \
                         wf(lead)[channel][i] * wf(lead)[channel][j].conj() * \
                         np.exp(-1j*t*e)
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
 def integrand_GtG(syst, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
@@ -243,7 +243,7 @@ def integrand_GtG(syst, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
 
         eps_i and gamma_wire : parameters for the dispertion relation
     """
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
     # Test if we are between fermi levels, else result is 0
     if np.any(np.array([(fermi(e, ef, beta)-1) for ef in ef]) < -1e-14):
@@ -254,11 +254,11 @@ def integrand_GtG(syst, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
                         (fermi(e, ef[lead], beta)-1) * \
                         wf(lead)[channel][i] * wf(lead)[channel][j].conj() * \
                         np.exp(-1j*t*e)
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
 def integrand_GtR(syst, k, t, i, j, eps_i=0, gamma_wire=1):
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
     wf = kwant.wave_function(syst, energy=e)
     for lead in range(len(syst.leads)):
@@ -267,7 +267,7 @@ def integrand_GtR(syst, k, t, i, j, eps_i=0, gamma_wire=1):
                     wf(lead)[channel][i] * wf(lead)[channel][j].conj() * \
                     np.exp(-1j*t*e)
     val = -1j * np.heaviside(t, 1) * val
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
 def integrand_Gt_control(syst, k, i, j, eps_i=0, gamma_wire=1):
@@ -283,14 +283,14 @@ def integrand_Gt_control(syst, k, i, j, eps_i=0, gamma_wire=1):
 
         eps_i and gamma_wire : parameters for the dispertion relation
     """
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = 0
     wf = kwant.wave_function(syst, energy=e)
     for lead in range(len(syst.leads)):
         for channel in range(1):
             val += 1/(2*np.pi) * \
                     wf(lead)[channel][i] * wf(lead)[channel][j].conj()
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
 def calc_GtG_from_GtLR(t, GtL, GtR):
@@ -348,14 +348,14 @@ def calc_GtL_E(syst, t, i, j, ef, beta, Emin, Emax, quad_vec_kwargs={}):
 
 def integrand_GtL_intp(intp, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (22) in 1307.6419 for G(t)< using interpolation."""
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
     for lead in range(2):
         for channel in range(1):
             val += (-1)**channel * 1j/(2*np.pi) * fermi(e, ef[lead], beta) * \
                 intp(k, lead, channel, i) * intp(k, lead, channel, j).conj() *\
                 np.exp(-1j*t*e)
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
 def integrand_GtL_intp_mat(intp, k, t, idx_i, idx_j, ef, beta, eps_i=0, gamma_wire=1):
@@ -369,7 +369,7 @@ def integrand_GtL_intp_mat(intp, k, t, idx_i, idx_j, ef, beta, eps_i=0, gamma_wi
                             |G10 G11|
     we supply [[0,0],[1,1]] and [[0,1], [0,1]].
     """
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = np.zeros((t.shape[0], len(idx_i), len(idx_j)), dtype=np.complex)
     for lead in range(2):
         for channel in range(1):
@@ -379,7 +379,7 @@ def integrand_GtL_intp_mat(intp, k, t, idx_i, idx_j, ef, beta, eps_i=0, gamma_wi
                              for i in row] for row in idx_j]).conj()
             val += (-1)**channel * 1j/(2*np.pi) * fermi(e, ef[lead], beta) * \
                 wf1 * wf2 * np.exp(-1j*t*e)[:, np.newaxis, np.newaxis]
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 ###############################################################################
 # # Gt^<
@@ -428,7 +428,7 @@ def calc_GtG_E(syst, t, i, j, ef, beta, Emin, Emax, quad_vec_kwargs={}):
 
 def integrand_GtG_intp(intp, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (22) in 1307.6419 for G(t)> using interpolation."""
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
     for lead in range(2):
         for channel in range(1):
@@ -436,7 +436,7 @@ def integrand_GtG_intp(intp, k, t, i, j, ef, beta, eps_i=0, gamma_wire=1):
                 (fermi(e, ef[lead], beta)-1) * \
                 intp(k, lead, channel, i) * intp(k, lead, channel, j).conj() *\
                 np.exp(-1j*t*e)
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 
 def integrand_GtG_intp_mat(intp, k, t, idx_i, idx_j, ef, beta, eps_i=0, gamma_wire=1):
@@ -450,7 +450,7 @@ def integrand_GtG_intp_mat(intp, k, t, idx_i, idx_j, ef, beta, eps_i=0, gamma_wi
                             |G10 G11|
     we supply [[0,0],[1,1]] and [[0,1], [0,1]].
     """
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = np.zeros((t.shape[0], len(idx_i), len(idx_j)), dtype=np.complex)
     for lead in range(2):
         for channel in range(1):
@@ -461,7 +461,7 @@ def integrand_GtG_intp_mat(intp, k, t, idx_i, idx_j, ef, beta, eps_i=0, gamma_wi
             val += (-1)**channel * 1j/(2*np.pi) * \
                     (fermi(e, ef[lead], beta)-1) * \
                     wf1 * wf2 * np.exp(-1j*t*e)[:, np.newaxis, np.newaxis]
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 ###############################################################################
 # # Gt^R
@@ -487,7 +487,7 @@ def calc_GtR_E(syst, t, i, j, Emin, Emax, quad_vec_kwargs={}):
 
 
 def integrand_GtR_intp(intp, k, t, i, j, eps_i=0, gamma_wire=1):
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = np.zeros((t.shape[0],), dtype=np.complex)
     for lead in range(2):
         for channel in range(1):
@@ -495,7 +495,7 @@ def integrand_GtR_intp(intp, k, t, i, j, eps_i=0, gamma_wire=1):
                 intp(k, lead, channel, i) * intp(k, lead, channel, j).conj() *\
                 np.exp(-1j*t*e)
     val = -1j * np.heaviside(t, 1) * val
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)
 
 ###############################################################################
 # # Gt control
@@ -538,10 +538,10 @@ def calc_Gt_control_E(syst, i, Emin, Emax, quad_vec_kwargs={}):
 
 def integrand_Gt_control_intp(intp, k, i, eps_i=0, gamma_wire=1):
     """Integrand from Eq. (26) in 1307.6419 for |G(t)|² using interpolation."""
-    e = eps_i + 2*np.abs(gamma_wire)*np.cos(k)
+    e = eps_i + 2*gamma_wire*np.cos(k)
     val = 0
     for lead in range(2):
         for channel in range(1):
             val += 1/(2*np.pi) * \
                 intp(k, lead, channel, i) * intp(k, lead, channel, i).conj()
-    return -2*np.abs(gamma_wire)*np.sin(k)*np.stack((val.real, val.imag), -1)
+    return -2*gamma_wire*np.sin(k)*np.stack((val.real, val.imag), -1)

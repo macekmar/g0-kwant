@@ -43,7 +43,7 @@ class WaveFunInterpolation():
         Returns an array of size:
             nb_leads × nb_channels × nb_sites × 2 (Re, Im).
         """
-        e = self.eps_i + 2*np.abs(self.gamma_wire)*np.cos(k)
+        e = self.eps_i + 2*self.gamma_wire*np.cos(k)
         wf = kwant.wave_function(self.syst, energy=e)
         res = np.array([[wf(i).real, wf(i).imag] for i in range(self.nb_leads)])
         return np.moveaxis(res, 1, -1)  # Re, Im should be last axis
