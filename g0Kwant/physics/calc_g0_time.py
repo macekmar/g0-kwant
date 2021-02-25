@@ -138,7 +138,11 @@ def calc_GtLG_integrals(syst, times, sites, ef, beta, eps_i=0, gamma_wire=1,
     # Integrate
     itr = 0
     cache_size = int(2*1024**3)  # 2 GB?
-    pts = np.arccos(np.array(ef)/2)
+    sgn = -np.sign(gamma_wire) # If gamma_wire > 0: E=(-2,2) maps into k = (pi, 0)
+                               # If gamma_wire < 0: E=(-2,2) maps into k = (0, pi)
+                               # We integrate from 0 to pi and then take care of the sign
+
+    pts = np.arccos(np.array(ef)/(2*gamma_wire))
     pts = np.unique(pts)
     for i in range(len(sites)):
         for j in range(i, len(sites)):  # use the fact G^<(t) = G^<(-t)^†
@@ -149,8 +153,8 @@ def calc_GtLG_integrals(syst, times, sites, ef, beta, eps_i=0, gamma_wire=1,
                 @globalize
                 def fun_GtL(k):
                     return integrand_GtL(syst, k, times, idx_i[i,j], idx_j[i,j], ef, beta, eps_i, gamma_wire)
-                res, _ = integrate(fun_GtL, b, a, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int, "points": pts, "epsrel": epsrel })
-                GwL[:, i, j] -= res
+                res, _ = integrate(fun_GtL, a, b, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int, "points": pts, "epsrel": epsrel })
+                GwL[:, i, j] += sgn * res
             itr += 1
             itr = itr % nr_idx
             if itr == i_idx:
@@ -158,8 +162,8 @@ def calc_GtLG_integrals(syst, times, sites, ef, beta, eps_i=0, gamma_wire=1,
                 @globalize
                 def fun_GtG(k):
                     return integrand_GtG(syst, k, times, idx_i[i,j], idx_j[i,j], ef, beta, eps_i, gamma_wire)
-                res, _ = integrate(fun_GtG, b, a, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int, "points": pts, "epsrel": epsrel })
-                GwG[:, i, j] -= res
+                res, _ = integrate(fun_GtG, a, b, quad_vec_kwargs={"cache_size": cache_size, "workers": nr_int, "points": pts, "epsrel": epsrel })
+                GwG[:, i, j] += sgn * res
 
             itr += 1
             itr = itr % nr_idx
