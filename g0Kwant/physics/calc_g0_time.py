@@ -132,8 +132,8 @@ def calc_GtLG_integrals(syst, times, sites, ef, beta, eps_i=0, gamma_wire=1,
     i_idx = world.rank % nr_idx
     i_k = (world.rank // nr_idx) % nr_k
 
-    a = (i_k + 1) / nr_k * np.pi
-    b = i_k / nr_k * np.pi
+    a = i_k / nr_k * np.pi
+    b = (i_k + 1) / nr_k * np.pi
 
     # Integrate
     itr = 0
